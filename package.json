@@ -1,0 +1,27 @@
+{
+    "name": "remove-unused-less-imports",
+    "version": "0.0.0",
+    "description": "Removed unused LESS reference imports.",
+    "keywords": [],
+    "homepage": "https://github.com/electrovir/remove-unused-less-imports#readme",
+    "bugs": {
+        "url": "https://github.com/electrovir/remove-unused-less-imports/issues"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/electrovir/remove-unused-less-imports.git"
+    },
+    "license": "MIT",
+    "author": "",
+    "main": "index.js",
+    "scripts": {
+        "format": "virmator format write",
+        "prepublishOnly": "npm run test:full",
+        "spellcheck": "virmator spellcheck",
+        "test": "virmator test",
+        "test:full": "npm test && npm run spellcheck && virmator format check"
+    },
+    "devDependencies": {
+        "virmator": "2.0.5"
+    }
+}
