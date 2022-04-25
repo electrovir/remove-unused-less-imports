@@ -1,0 +1,37 @@
+@import (reference) './simple-file';
+
+@varDefinition: red;
+@detachedRulesDefinition: {
+    color: orange;
+}
+@mapDefinition: {
+    one: yellow;
+    two: green;
+}
+
+.mixin-new-syntax() {
+    color: blue;
+}
+
+// just a class, but also can be used as a mixin
+.mixin-old-syntax {
+    color: purple;
+}
+
+#namespaceDefinition() {
+    .innerProperty {
+        color: violet;
+    }
+}
+
+body {
+    color: @varDefinition;
+    .mixin-new-syntax();
+    .mixin-old-syntax();
+    
+    &:extend(.mixin-old-syntax);
+    
+    color: @mapDefinition[two];
+    color: @mapDefinition[two];
+    #namespaceDefinition.innerProperty();
+}
