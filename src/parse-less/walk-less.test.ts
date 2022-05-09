@@ -1,7 +1,7 @@
 import {getObjectTypedKeys, Writeable} from 'augment-vir';
 import {readFile} from 'fs/promises';
 import {NodeType, render, tree} from 'less';
-import {allNodeTypes, getNodeType, nodeToString} from '../augments/node';
+import {allNodeTypes, getNodeType, nodeToLineString} from '../augments/node';
 import {incrementProps} from '../augments/object';
 import {parseTestFiles} from '../test/test-file-paths';
 import {parseLessFile} from './parse';
@@ -193,7 +193,7 @@ describe(walkLess.name, () => {
                 const nodesArray = nodes.get(nodeKey);
                 if (nodesArray) {
                     accum[nodeKey as NodeType] = nodesArray?.map((node) => {
-                        const nodeString = nodeToString(node);
+                        const nodeString = nodeToLineString(node);
                         return nodeString;
                     });
                 }

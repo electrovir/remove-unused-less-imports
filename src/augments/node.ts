@@ -1,4 +1,4 @@
-import {typedHasOwnProperty} from 'augment-vir';
+import {getObjectTypedKeys, isObject, mapObject, typedHasOwnProperty} from 'augment-vir';
 import {AnyNodeSubType, NodeType, tree} from 'less';
 import {Constructor} from './type';
 
@@ -36,8 +36,8 @@ export const allNodeTypes: Readonly<NodeType[]> = [
     NodeType.Unit,
     NodeType.URL,
     NodeType.Value,
-    NodeType.VariableCall,
     NodeType.Variable,
+    NodeType.VariableCall,
 ] as const;
 
 export const allNodeConstructors: Readonly<Constructor<tree.Node>[]> = [
@@ -74,8 +74,8 @@ export const allNodeConstructors: Readonly<Constructor<tree.Node>[]> = [
     tree.Unit,
     tree.URL,
     tree.Value,
-    tree.VariableCall,
     tree.Variable,
+    tree.VariableCall,
 ] as const;
 
 export const mappedNodeConstructors = allNodeTypes.reduce((accum, currentNodeType, index) => {
@@ -264,7 +264,40 @@ function nodeStringToString(nodeString: NodeString): string {
     return `${nodeType}${nodeInnerAccessString}`;
 }
 
-export function nodeToString(node: tree.Node): string {
+export function nodeToLineString(node: tree.Node): string {
     const nodeStrings = innerNodeToString(node);
     return nodeStrings.map((nodeString) => nodeStringToString(nodeString)).join(' ');
+}
+
+const unserializableKeys = [
+    'parent',
+    // this one is serializable I just don't want to look at it
+    '_fileInfo',
+];
+
+function nodeToSerializable(node: unknown): unknown {
+    if (isObject(node)) {
+        if (node instanceof tree.Node) {
+            const serialized = getObjectTypedKeys(node).reduce(
+                (accum, key: keyof tree.Node) => {
+                    if (!unserializableKeys.includes(key)) {
+                        accum[key] = nodeToSerializable(node[key]);
+                    }
+                    return accum;
+                },
+                {type: node.type} as Record<keyof tree.Node, any>,
+            );
+
+            return serialized;
+        } else {
+            return mapObject(node, (key, value) => {
+                return nodeToSerializable(value);
+            });
+        }
+    }
+    return node;
+}
+
+export function jsonSerializedNode(input: tree.Node, indent = 2): string {
+    return JSON.stringify(nodeToSerializable(input), null, indent);
 }

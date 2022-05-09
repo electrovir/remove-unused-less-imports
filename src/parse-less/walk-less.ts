@@ -7,6 +7,7 @@ type WalkOptions = {
      * probably get checked on their own instead.
      */
     walkImports?: boolean;
+    skipChildren?: boolean;
 };
 
 export function walkLess(
@@ -22,12 +23,17 @@ export function walkLess(
     if (!options.walkImports && node instanceof tree.Import) {
         return false;
     }
+    const isRoot: boolean = !!(node instanceof tree.Ruleset && node.root);
 
-    const children = getChildren(node);
+    if (options.skipChildren && !isRoot) {
+        return false;
+    } else {
+        const children = getChildren(node);
 
-    return children.some((child) => {
-        return walkLess(child, callback);
-    });
+        return children.some((child) => {
+            return walkLess(child, callback, options);
+        });
+    }
 }
 
 function getChildren(node: tree.Node): tree.Node[] {

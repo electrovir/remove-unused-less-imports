@@ -1,5 +1,8 @@
 {
     "ignorePaths": ["@types"],
     "import": ".cspell-base.json",
-    "words": ["Ruleset"]
+    "words": [
+        "evald",
+        "Ruleset"
+    ]
 }

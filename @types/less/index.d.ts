@@ -292,6 +292,7 @@ declare namespace LessStatic {
         }
         class Element extends Node {
             combinator: any;
+            value: string;
         }
         class Expression extends Node {
             noSpacing: undefined;
@@ -364,15 +365,16 @@ declare namespace LessStatic {
         class VariableCall extends Node {
             variable: string;
         }
-        // more complicated than I want to deal with right now:
-        export const mixin = {
-            Call: MixinCall,
-            Definition: MixinDefinition,
-        };
+        export namespace mixin {
+            class Call extends MixinCall {}
+            class Definition extends MixinDefinition {}
+        }
     }
 
     class MixinCall extends tree.Node {}
-    class MixinDefinition extends tree.Node {}
+    class MixinDefinition extends tree.Node {
+        name: string;
+    }
 
     export type AnyNodeSubType =
         | tree.Anonymous
@@ -393,8 +395,8 @@ declare namespace LessStatic {
         | tree.Import
         | tree.JsEvalNode
         | tree.Keyword
-        | MixinCall
-        | MixinDefinition
+        | tree.mixin.Call
+        | tree.mixin.Definition
         | tree.NamespaceValue
         | tree.Negative
         | tree.Operation
