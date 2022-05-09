@@ -8,9 +8,9 @@ const parseTestingDir = join(testFilesDir, 'parse-testing');
 export const parseTestFiles = {
     simpleFile: join(parseTestingDir, 'simple-file.less'),
     allTheThings: join(parseTestingDir, 'all-the-things.less'),
-    allTheThingsWithExtraNonImportableThings: join(
+    allTheThingsWithExtraExportableThings: join(
         parseTestingDir,
-        'all-the-things-with-extra-non-importable-things.less',
+        'all-the-things-with-extra-exportable-things.less',
     ),
     allTheThingsWithExtraImportableThings: join(
         parseTestingDir,

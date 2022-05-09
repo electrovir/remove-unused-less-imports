@@ -280,8 +280,11 @@ declare namespace LessStatic {
             name: Keyword[] | string;
             value: Value | Anonymous;
             important: string;
+            variabe: boolean;
         }
-        class DetachedRuleset extends Node {}
+        class DetachedRuleset extends Node {
+            ruleset: Node;
+        }
         class Dimension extends Node {
             value: number;
             unit: Unit;
@@ -299,16 +302,26 @@ declare namespace LessStatic {
         class Keyword extends Node {
             value: string;
         }
-        class Import extends Node {}
+        class Import extends Node {
+            options: Partial<{
+                reference: boolean;
+            }>;
+            path: Quoted;
+        }
         class JavaScript extends JsEvalNode {}
         class JsEvalNode extends Node {}
         class Media extends AtRule {}
-        class NamespaceValue extends Node {}
+        class NamespaceValue extends Node {
+            value: Node;
+            lookups: string[];
+        }
         class Negative extends Node {}
         class Operation extends Node {}
         class Paren extends Node {}
         class Property extends Node {}
-        class Quoted extends Node {}
+        class Quoted extends Node {
+            value: string;
+        }
         class Ruleset extends Node {
             isRuleSet: boolean;
             allowRoot?: boolean;

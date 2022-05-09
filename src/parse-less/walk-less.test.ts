@@ -1,7 +1,7 @@
-import {getObjectTypedKeys} from 'augment-vir';
+import {getObjectTypedKeys, Writeable} from 'augment-vir';
 import {readFile} from 'fs/promises';
 import {NodeType, render, tree} from 'less';
-import {getNodeType, nodeToString} from '../augments/node';
+import {allNodeTypes, getNodeType, nodeToString} from '../augments/node';
 import {incrementProps} from '../augments/object';
 import {parseTestFiles} from '../test/test-file-paths';
 import {parseLessFile} from './parse';
@@ -67,7 +67,7 @@ describe(walkLess.name, () => {
         VariableCall: 3,
     });
 
-    const countsWithExtraNonImportableItems = incrementProps(allTheThingsNodeCounts, {
+    const countsWithExtraExportableItems = incrementProps(allTheThingsNodeCounts, {
         Anonymous: 11,
         Combinator: 7,
         Comment: 1,
@@ -128,10 +128,10 @@ describe(walkLess.name, () => {
         );
     });
 
-    it('should find extra non-importable nodes', async () => {
+    it('should find extra exportable nodes', async () => {
         await testNodes(
-            parseTestFiles.allTheThingsWithExtraNonImportableThings,
-            countsWithExtraNonImportableItems,
+            parseTestFiles.allTheThingsWithExtraExportableThings,
+            countsWithExtraExportableItems,
         );
     });
 
@@ -145,95 +145,223 @@ describe(walkLess.name, () => {
         NodeType.VariableCall,
     ];
 
-    it('should show us the important node types', () => {
-        function getIncrementedKeys(inputObject: Readonly<Partial<Record<NodeType, number>>>) {
-            return getObjectTypedKeys(inputObject).filter((key) => {
-                const nonImportableCount = inputObject[key];
-                const originalCount = allTheThingsNodeCounts[key];
-                return nonImportableCount !== originalCount;
-            });
-        }
+    const maybeExportableNodeTypes: NodeType[] = [
+        NodeType.Anonymous,
+        NodeType.Comment,
+        NodeType.DetachedRuleset,
+        NodeType.Import,
+        NodeType.MixinDefinition,
+        NodeType.Ruleset,
+    ];
 
-        const nonImportableIncrementedKeys = getIncrementedKeys(countsWithExtraNonImportableItems);
-        const importableIncrementedKeys = getIncrementedKeys(countsWithExtraImportableItems);
+    function getIncrementedKeys(inputObject: Readonly<Partial<Record<NodeType, number>>>) {
+        return getObjectTypedKeys(inputObject).filter((key) => {
+            const exportableCount = inputObject[key];
+            const originalCount = allTheThingsNodeCounts[key];
+            return exportableCount !== originalCount;
+        });
+    }
+    const exportableIncrementedKeys = getIncrementedKeys(countsWithExtraExportableItems);
+    const importableIncrementedKeys = getIncrementedKeys(countsWithExtraImportableItems);
 
-        const onlyImportantNodeTypes = importableIncrementedKeys.filter((maybeImportantKey) => {
-            return !nonImportableIncrementedKeys.includes(maybeImportantKey);
+    it('should show us the importable node types', () => {
+        const onlyImportableNodeTypes = importableIncrementedKeys.filter((maybeImportantKey) => {
+            return !exportableIncrementedKeys.includes(maybeImportantKey);
         });
 
-        expect(onlyImportantNodeTypes).toEqual(maybeImportableNodeTypes);
+        expect(onlyImportableNodeTypes).toEqual(maybeImportableNodeTypes);
     });
 
-    it('should grant readable lines for maybe importable node types', async () => {
-        const nodes = await getNodesFromFile(parseTestFiles.allTheThingsWithExtraImportableThings);
+    it('should show us the exportable node types', () => {
+        const onlyExportableNodeTypes = exportableIncrementedKeys.filter((maybeImportantKey) => {
+            return !importableIncrementedKeys.includes(maybeImportantKey);
+        });
 
-        const nodeLines = maybeImportableNodeTypes.reduce((accum, nodeKey) => {
+        expect(onlyExportableNodeTypes).toEqual(maybeExportableNodeTypes);
+    });
+
+    async function testNodeLines(
+        filePath: string,
+        expectedNodeLines: NodeLines,
+        nodeTypeFilterList: Readonly<NodeType[]> = allNodeTypes,
+    ): Promise<void> {
+        const nodes = await getNodesFromFile(filePath);
+
+        const nodeLines: NodeLines = nodeTypeFilterList.reduce((accum, nodeKey) => {
             const nodesArray = nodes.get(nodeKey);
-            accum[nodeKey as NodeType] = nodesArray?.map((node) => {
-                const nodeString = nodeToString(node);
-                return nodeString;
-            }) ?? [
-                'NODES UNDEFINED',
-            ];
+            if (nodesArray) {
+                accum[nodeKey as NodeType] = nodesArray?.map((node) => {
+                    const nodeString = nodeToString(node);
+                    return nodeString;
+                });
+            }
             return accum;
-        }, {} as Record<NodeType, string[]>);
+        }, {} as Writeable<NodeLines>);
 
-        const expectedReadableLines: Readonly<Partial<Record<NodeType, string[]>>> = {
+        expect(nodeLines).toEqual(expectedNodeLines);
+    }
+
+    type NodeLines = Readonly<Partial<Record<NodeType, string[]>>>;
+
+    it('should grant readable lines for maybe importable node types', async () => {
+        /*
+            From the following data we discover the following for importable things:
+            
+            Can be ignored:
+                Expression: these are covered by the Variable and VariableCall types
+                NamespaceValue: these are covered by VariableCall
+                Value: these are covered by the Variable and VariableCall types
+            
+            Should be considered:
+                Potentially importable:
+                    Extend: these are potentially importable
+                Always importable:
+                    MixinCall: these are all always importable
+                    Variable: these are always importable
+                    VariableCall: these are always importable
+        */
+
+        const expectedReadableLines: NodeLines = {
             [NodeType.Expression]: [
-                'Variable: @var-definition',
-                'Variable: @var-definition',
-                'VariableCall: @map-definition',
-                'VariableCall: @map-definition',
-                'VariableCall: @map-definition',
-                'VariableCall: @map-definition',
-                'VariableCall: @map-definition',
-                'VariableCall: @map-definition',
+                'Expression.value: -> Array[0] -> Variable.name: @var-definition',
+                'Expression.value: -> Array[0] -> Variable.name: @var-definition',
+                'Expression.value: -> Array[0] -> NamespaceValue.value: -> VariableCall.variable: @map-definition NamespaceValue.lookups.0: one',
+                'Expression.value: -> Array[0] -> NamespaceValue.value: -> VariableCall.variable: @map-definition NamespaceValue.lookups.0: one',
+                'Expression.value: -> Array[0] -> NamespaceValue.value: -> VariableCall.variable: @map-definition NamespaceValue.lookups.0: two',
+                'Expression.value: -> Array[0] -> NamespaceValue.value: -> VariableCall.variable: @map-definition NamespaceValue.lookups.0: two',
+                'Expression.value: -> Array[0] -> NamespaceValue.value: -> VariableCall.variable: @map-definition NamespaceValue.lookups.0: two',
+                'Expression.value: -> Array[0] -> NamespaceValue.value: -> VariableCall.variable: @map-definition NamespaceValue.lookups.0: two',
             ],
             [NodeType.Extend]: [
-                'Element: .mixin-old-syntax',
-                'Element: .mixin-old-syntax',
+                'Extend.selector: -> Selector.elements: -> Array[0] -> Element.value: .mixin-old-syntax',
+                'Extend.selector: -> Selector.elements: -> Array[0] -> Element.value: .mixin-old-syntax',
             ],
             [NodeType.MixinCall]: [
-                'Element: .mixin-new-syntax',
-                'Element: .mixin-new-syntax',
-                'Element: .mixin-old-syntax',
-                'Element: .mixin-old-syntax',
-                'Element: #namespace-definition Element: .innerProperty',
-                'Element: #namespace-definition Element: .innerProperty',
+                'MixinCall.selector: -> Selector.elements: -> Array[0] -> Element.value: .mixin-new-syntax',
+                'MixinCall.selector: -> Selector.elements: -> Array[0] -> Element.value: .mixin-new-syntax',
+                'MixinCall.selector: -> Selector.elements: -> Array[0] -> Element.value: .mixin-old-syntax',
+                'MixinCall.selector: -> Selector.elements: -> Array[0] -> Element.value: .mixin-old-syntax',
+                'MixinCall.selector: -> Selector.elements: -> Array[0] -> Element.value: #namespace-definition Array[1] -> Element.value: .innerProperty',
+                'MixinCall.selector: -> Selector.elements: -> Array[0] -> Element.value: #namespace-definition Array[1] -> Element.value: .innerProperty',
             ],
             [NodeType.NamespaceValue]: [
-                'VariableCall: @map-definition',
-                'VariableCall: @map-definition',
-                'VariableCall: @map-definition',
-                'VariableCall: @map-definition',
-                'VariableCall: @map-definition',
-                'VariableCall: @map-definition',
+                'NamespaceValue.value: -> VariableCall.variable: @map-definition NamespaceValue.lookups.0: one',
+                'NamespaceValue.value: -> VariableCall.variable: @map-definition NamespaceValue.lookups.0: one',
+                'NamespaceValue.value: -> VariableCall.variable: @map-definition NamespaceValue.lookups.0: two',
+                'NamespaceValue.value: -> VariableCall.variable: @map-definition NamespaceValue.lookups.0: two',
+                'NamespaceValue.value: -> VariableCall.variable: @map-definition NamespaceValue.lookups.0: two',
+                'NamespaceValue.value: -> VariableCall.variable: @map-definition NamespaceValue.lookups.0: two',
             ],
             [NodeType.Value]: [
-                'Variable: @var-definition',
-                'Variable: @var-definition',
-                'VariableCall: @map-definition',
-                'VariableCall: @map-definition',
-                'VariableCall: @map-definition',
-                'VariableCall: @map-definition',
-                'VariableCall: @map-definition',
-                'VariableCall: @map-definition',
+                'Value.value: -> Array[0] -> Expression.value: -> Array[0] -> Variable.name: @var-definition',
+                'Value.value: -> Array[0] -> Expression.value: -> Array[0] -> Variable.name: @var-definition',
+                'Value.value: -> Array[0] -> Expression.value: -> Array[0] -> NamespaceValue.value: -> VariableCall.variable: @map-definition NamespaceValue.lookups.0: one',
+                'Value.value: -> Array[0] -> Expression.value: -> Array[0] -> NamespaceValue.value: -> VariableCall.variable: @map-definition NamespaceValue.lookups.0: one',
+                'Value.value: -> Array[0] -> Expression.value: -> Array[0] -> NamespaceValue.value: -> VariableCall.variable: @map-definition NamespaceValue.lookups.0: two',
+                'Value.value: -> Array[0] -> Expression.value: -> Array[0] -> NamespaceValue.value: -> VariableCall.variable: @map-definition NamespaceValue.lookups.0: two',
+                'Value.value: -> Array[0] -> Expression.value: -> Array[0] -> NamespaceValue.value: -> VariableCall.variable: @map-definition NamespaceValue.lookups.0: two',
+                'Value.value: -> Array[0] -> Expression.value: -> Array[0] -> NamespaceValue.value: -> VariableCall.variable: @map-definition NamespaceValue.lookups.0: two',
             ],
             [NodeType.Variable]: [
-                'Variable: @var-definition',
-                'Variable: @var-definition',
+                'Variable.name: @var-definition',
+                'Variable.name: @var-definition',
             ],
             [NodeType.VariableCall]: [
-                'VariableCall: @map-definition',
-                'VariableCall: @map-definition',
-                'VariableCall: @map-definition',
-                'VariableCall: @map-definition',
-                'VariableCall: @map-definition',
-                'VariableCall: @map-definition',
+                'VariableCall.variable: @map-definition',
+                'VariableCall.variable: @map-definition',
+                'VariableCall.variable: @map-definition',
+                'VariableCall.variable: @map-definition',
+                'VariableCall.variable: @map-definition',
+                'VariableCall.variable: @map-definition',
+            ],
+        };
+        await testNodeLines(
+            parseTestFiles.allTheThingsWithExtraImportableThings,
+            expectedReadableLines,
+            maybeImportableNodeTypes,
+        );
+    });
+
+    it('should grant readable lines for maybe exportable node types', async () => {
+        const expectedReadableLines: NodeLines = {
+            [NodeType.Anonymous]: [
+                'Anonymous.value: red',
+                'Anonymous.value: orange',
+                'Anonymous.value: yellow',
+                'Anonymous.value: green',
+                'Anonymous.value: blue',
+                'Anonymous.value: purple',
+                'Anonymous.value: violet',
+                'Anonymous.value: red',
+                'Anonymous.value: orange',
+                'Anonymous.value: yellow',
+                'Anonymous.value: green',
+                'Anonymous.value: blue',
+                'Anonymous.value: purple',
+                'Anonymous.value: violet',
+                'Anonymous.value: red',
+                'Anonymous.value: purple',
+                'Anonymous.value: green',
+                'Anonymous.value: center',
+                'Anonymous.value: center',
+            ],
+            [NodeType.Comment]: [
+                'Comment.value: // just a class, but also can be used as a mixin',
+                'Comment.value: // just a class, but also can be used as a mixin',
+            ],
+            [NodeType.DetachedRuleset]: [
+                'DetachedRuleset.ruleset: -> Ruleset.rules: -> Array[0] -> Declaration.name: -> Array[0] -> Keyword.value: color',
+                'DetachedRuleset.ruleset: -> Ruleset.rules: -> Array[0] -> Declaration.name: -> Array[0] -> Keyword.value: one Array[1] -> Declaration.name: -> Array[0] -> Keyword.value: two',
+                'DetachedRuleset.ruleset: -> Ruleset.rules: -> Array[0] -> Declaration.name: -> Array[0] -> Keyword.value: color',
+                'DetachedRuleset.ruleset: -> Ruleset.rules: -> Array[0] -> Declaration.name: -> Array[0] -> Keyword.value: one Array[1] -> Declaration.name: -> Array[0] -> Keyword.value: two',
+            ],
+            [NodeType.Import]: [
+                'Import.path: -> Quoted.value: ./simple-file',
+                'Import.path: -> Quoted.value: ./simple-file',
+            ],
+            [NodeType.MixinDefinition]: [
+                'MixinDefinition.rules: -> Array[0] -> Declaration.name: -> Array[0] -> Keyword.value: color',
+                'MixinDefinition.rules: -> Array[0] -> Ruleset.rules: -> Array[0] -> Declaration.name: -> Array[0] -> Keyword.value: color',
+                'MixinDefinition.rules: -> Array[0] -> Declaration.name: -> Array[0] -> Keyword.value: color',
+                'MixinDefinition.rules: -> Array[0] -> Ruleset.rules: -> Array[0] -> Declaration.name: -> Array[0] -> Keyword.value: color',
+            ],
+            [NodeType.Ruleset]: [
+                'Ruleset.rules: -> Array[0] -> Import.path: -> Quoted.value: ./simple-file Array[1] -> Import.path: -> Quoted.value: ./simple-file Array[2] -> Declaration.name: @var-definition Array[3] -> Declaration.name: @detached-rules-definition Array[4] -> Declaration.name: @map-definition Array[5] -> MixinDefinition.rules: -> Array[0] -> Declaration.name: -> Array[0] -> Keyword.value: color Array[6] -> Comment.value: // just a class, but also can be used as a mixin Array[7] -> Ruleset.rules: -> Array[0] -> Declaration.name: -> Array[0] -> Keyword.value: color Array[8] -> MixinDefinition.rules: -> Array[0] -> Ruleset.rules: -> Array[0] -> Declaration.name: -> Array[0] -> Keyword.value: color Array[9] -> Declaration.name: @var-definition2 Array[10] -> Declaration.name: @detached-rules-definition2 Array[11] -> Declaration.name: @map-definition2 Array[12] -> MixinDefinition.rules: -> Array[0] -> Declaration.name: -> Array[0] -> Keyword.value: color Array[13] -> Comment.value: // just a class, but also can be used as a mixin Array[14] -> Ruleset.rules: -> Array[0] -> Declaration.name: -> Array[0] -> Keyword.value: color Array[15] -> MixinDefinition.rules: -> Array[0] -> Ruleset.rules: -> Array[0] -> Declaration.name: -> Array[0] -> Keyword.value: color Array[16] -> Ruleset.rules: -> Array[0] -> Declaration.name: -> Array[0] -> Keyword.value: color Array[1] -> Ruleset.rules: -> Array[0] -> Declaration.name: -> Array[0] -> Keyword.value: background-color Array[17] -> Ruleset.rules: -> Array[0] -> Declaration.name: -> Array[0] -> Keyword.value: color Array[1] -> Declaration.name: -> Array[0] -> Keyword.value: color Array[2] -> MixinCall.selector: -> Selector.elements: -> Array[0] -> Element.value: .mixin-new-syntax Array[3] -> MixinCall.selector: -> Selector.elements: -> Array[0] -> Element.value: .mixin-old-syntax Array[4] -> Extend.selector: -> Selector.elements: -> Array[0] -> Element.value: .mixin-old-syntax Array[5] -> Declaration.name: -> Array[0] -> Keyword.value: text-align Array[6] -> Declaration.name: -> Array[0] -> Keyword.value: text-align Array[7] -> Declaration.name: -> Array[0] -> Keyword.value: border-color Array[8] -> Declaration.name: -> Array[0] -> Keyword.value: color Array[9] -> Declaration.name: -> Array[0] -> Keyword.value: background-color Array[10] -> MixinCall.selector: -> Selector.elements: -> Array[0] -> Element.value: #namespace-definition Array[1] -> Element.value: .innerProperty',
+                'Ruleset.rules: -> Array[0] -> Declaration.name: -> Array[0] -> Keyword.value: color',
+                'Ruleset.rules: -> Array[0] -> Declaration.name: -> Array[0] -> Keyword.value: one Array[1] -> Declaration.name: -> Array[0] -> Keyword.value: two',
+                'Ruleset.rules: -> Array[0] -> Declaration.name: -> Array[0] -> Keyword.value: color',
+                'Ruleset.rules: -> Array[0] -> Declaration.name: -> Array[0] -> Keyword.value: color',
+                'Ruleset.rules: -> Array[0] -> Declaration.name: -> Array[0] -> Keyword.value: color',
+                'Ruleset.rules: -> Array[0] -> Declaration.name: -> Array[0] -> Keyword.value: one Array[1] -> Declaration.name: -> Array[0] -> Keyword.value: two',
+                'Ruleset.rules: -> Array[0] -> Declaration.name: -> Array[0] -> Keyword.value: color',
+                'Ruleset.rules: -> Array[0] -> Declaration.name: -> Array[0] -> Keyword.value: color',
+                'Ruleset.rules: -> Array[0] -> Declaration.name: -> Array[0] -> Keyword.value: color Array[1] -> Ruleset.rules: -> Array[0] -> Declaration.name: -> Array[0] -> Keyword.value: background-color',
+                'Ruleset.rules: -> Array[0] -> Declaration.name: -> Array[0] -> Keyword.value: background-color',
+                'Ruleset.rules: -> Array[0] -> Declaration.name: -> Array[0] -> Keyword.value: color Array[1] -> Declaration.name: -> Array[0] -> Keyword.value: color Array[2] -> MixinCall.selector: -> Selector.elements: -> Array[0] -> Element.value: .mixin-new-syntax Array[3] -> MixinCall.selector: -> Selector.elements: -> Array[0] -> Element.value: .mixin-old-syntax Array[4] -> Extend.selector: -> Selector.elements: -> Array[0] -> Element.value: .mixin-old-syntax Array[5] -> Declaration.name: -> Array[0] -> Keyword.value: text-align Array[6] -> Declaration.name: -> Array[0] -> Keyword.value: text-align Array[7] -> Declaration.name: -> Array[0] -> Keyword.value: border-color Array[8] -> Declaration.name: -> Array[0] -> Keyword.value: color Array[9] -> Declaration.name: -> Array[0] -> Keyword.value: background-color Array[10] -> MixinCall.selector: -> Selector.elements: -> Array[0] -> Element.value: #namespace-definition Array[1] -> Element.value: .innerProperty',
             ],
         };
 
-        expect(nodeLines).toEqual(expectedReadableLines);
+        await testNodeLines(
+            parseTestFiles.allTheThingsWithExtraExportableThings,
+            expectedReadableLines,
+            maybeExportableNodeTypes,
+        );
+    });
+
+    it('should get node line for simple file', async () => {
+        const simpleFileLines: NodeLines = {
+            [NodeType.Anonymous]: [
+                'Anonymous.value: blue',
+            ],
+            [NodeType.Declaration]: [
+                'Declaration.name: @myVar',
+            ],
+            [NodeType.Ruleset]: [
+                'Ruleset.rules: -> Array[0] -> Declaration.name: @myVar',
+            ],
+        };
+
+        await testNodeLines(parseTestFiles.simpleFile, simpleFileLines);
     });
 });
 

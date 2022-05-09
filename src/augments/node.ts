@@ -1,7 +1,45 @@
 import {typedHasOwnProperty} from 'augment-vir';
 import {AnyNodeSubType, NodeType, tree} from 'less';
 
-export function getNodeType(node: tree.Node): NodeType {
+export const allNodeTypes: Readonly<NodeType[]> = [
+    NodeType.Anonymous,
+    NodeType.Assignment,
+    NodeType.AtRule,
+    NodeType.Attribute,
+    NodeType.Call,
+    NodeType.Color,
+    NodeType.Combinator,
+    NodeType.Comment,
+    NodeType.Condition,
+    NodeType.Declaration,
+    NodeType.DetachedRuleset,
+    NodeType.Dimension,
+    NodeType.Element,
+    NodeType.Expression,
+    NodeType.Extend,
+    NodeType.Import,
+    NodeType.JavaScript,
+    NodeType.Keyword,
+    NodeType.Media,
+    NodeType.MixinCall,
+    NodeType.MixinDefinition,
+    NodeType.NamespaceValue,
+    NodeType.Negative,
+    NodeType.Operation,
+    NodeType.Paren,
+    NodeType.Property,
+    NodeType.Quoted,
+    NodeType.Ruleset,
+    NodeType.Selector,
+    NodeType.UnicodeDescriptor,
+    NodeType.Unit,
+    NodeType.URL,
+    NodeType.Value,
+    NodeType.VariableCall,
+    NodeType.Variable,
+] as const;
+
+export function getNodeType(node: Pick<tree.Node, 'type'>): NodeType {
     const type = node.type;
     const constructorName = node.constructor.name;
     if (type) {
@@ -21,28 +59,44 @@ function logNodePropError(node: tree.Node, details: any): void {
     }
 }
 
-type NodeString = [tree.Node, string];
+type NodeString = Readonly<
+    [Readonly<Pick<tree.Node, 'type'>> | 'Array', Readonly<Record<string, string>>]
+>;
 type NodeStringArray = [NodeString, ...NodeString[]];
-type InnerNodeToStringReturn = NodeString | NodeStringArray;
 
-function isNodeStringArray(
-    innerNodeToStringReturn: InnerNodeToStringReturn,
-): innerNodeToStringReturn is NodeStringArray {
-    return Array.isArray(innerNodeToStringReturn[0]);
+function wrapInnerNodeToString<T extends tree.Node>(node: T, prop: keyof T): NodeStringArray {
+    const subNodes = node[prop] as unknown as AnyNodeSubType | AnyNodeSubType[] | undefined;
+
+    if (!Array.isArray(subNodes) && !(subNodes instanceof tree.Node)) {
+        logNodePropError(node, {prop});
+        throw new Error(`Property value on node at "${prop}" was not more nodes.`);
+    }
+    return [
+        [
+            node,
+            {[prop]: '->'},
+        ],
+        ...innerNodeToString(subNodes),
+    ];
 }
 
-function innerNodeToString(node: AnyNodeSubType | AnyNodeSubType[]): InnerNodeToStringReturn {
+function innerNodeToString(node: AnyNodeSubType | AnyNodeSubType[]): NodeStringArray {
     if (Array.isArray(node)) {
-        const innerNodeStrings: NodeString[] = node.reduce((accum, innerNode): NodeString[] => {
-            const innerNodeString = innerNodeToString(innerNode);
-            if (isNodeStringArray(innerNodeString)) {
+        const innerNodeStrings: NodeString[] = node.reduce(
+            (accum, innerNode, index): NodeString[] => {
+                const innerNodeString: NodeStringArray = [
+                    [
+                        'Array',
+                        {[index]: '->'},
+                    ],
+                    ...innerNodeToString(innerNode),
+                ];
                 accum.push(...innerNodeString);
-            } else {
-                accum.push(innerNodeString);
-            }
 
-            return accum as NodeString[];
-        }, [] as NodeString[]);
+                return accum as NodeString[];
+            },
+            [] as NodeString[],
+        );
         if (innerNodeStrings.length) {
             return innerNodeStrings as NodeStringArray;
         } else {
@@ -50,18 +104,40 @@ function innerNodeToString(node: AnyNodeSubType | AnyNodeSubType[]): InnerNodeTo
             throw new Error(`Got no node strings.`);
         }
     } else {
-        if (typedHasOwnProperty('elements', node)) {
-            const elements = node.elements;
-            return innerNodeToString(elements);
+        if (typedHasOwnProperty('lookups', node)) {
+            const lookups: NodeString[] = node.lookups.map((lookup, index): NodeString => {
+                return [
+                    node,
+                    {[`lookups.${index}`]: lookup},
+                ];
+            });
+            const innerValues: NodeStringArray = wrapInnerNodeToString(node, 'value');
+
+            const returnValues: NodeStringArray = [
+                ...innerValues,
+                ...lookups,
+            ];
+            return returnValues;
+        } else if (typedHasOwnProperty('elements', node)) {
+            return wrapInnerNodeToString(node, 'elements');
         } else if (typedHasOwnProperty('selector', node)) {
-            const selector = node.selector;
-            return innerNodeToString(selector);
-        } else if (typedHasOwnProperty('variable', node)) {
+            return wrapInnerNodeToString(node, 'selector');
+        } else if (node instanceof tree.Import) {
+            return wrapInnerNodeToString(node, 'path');
+        } else if (typedHasOwnProperty('rules', node)) {
+            return wrapInnerNodeToString(node, 'rules');
+        } else if (
+            typedHasOwnProperty('variable', node) &&
+            node.variable != undefined &&
+            typeof node.variable !== 'boolean'
+        ) {
             const variable = node.variable;
             if (typeof variable === 'string') {
                 return [
-                    node,
-                    variable,
+                    [
+                        node,
+                        {variable},
+                    ],
                 ];
             } else {
                 logNodePropError(node, {variable});
@@ -71,11 +147,13 @@ function innerNodeToString(node: AnyNodeSubType | AnyNodeSubType[]): InnerNodeTo
             const name = node.name;
             if (typeof name === 'string') {
                 return [
-                    node,
-                    name,
+                    [
+                        node,
+                        {name},
+                    ],
                 ];
             } else if (Array.isArray(name)) {
-                return innerNodeToString(name);
+                return wrapInnerNodeToString(node, 'name');
             } else {
                 logNodePropError(node, {name});
                 throw new Error(`No type matched for name.`);
@@ -84,22 +162,28 @@ function innerNodeToString(node: AnyNodeSubType | AnyNodeSubType[]): InnerNodeTo
             const value = node.value;
             if (typeof value === 'string') {
                 return [
-                    node,
-                    value,
+                    [
+                        node,
+                        {value},
+                    ],
                 ];
             } else if (value instanceof tree.Node) {
-                return innerNodeToString(value);
+                return wrapInnerNodeToString(node, 'value');
             } else if (typeof value === 'number') {
                 return [
-                    node,
-                    String(value),
+                    [
+                        node,
+                        {value: String(value)},
+                    ],
                 ];
-            } else if (Array.isArray(value)) {
-                return innerNodeToString(value);
+            } else if (Array.isArray(node.value)) {
+                return wrapInnerNodeToString(node, 'value');
             } else {
                 logNodePropError(node, {value});
                 throw new Error(`No type matched for value.`);
             }
+        } else if (typedHasOwnProperty('ruleset', node)) {
+            return wrapInnerNodeToString(node, 'ruleset');
         } else {
             logNodePropError(node, undefined);
             throw new Error(`No string-like property matched.`);
@@ -108,15 +192,21 @@ function innerNodeToString(node: AnyNodeSubType | AnyNodeSubType[]): InnerNodeTo
 }
 
 function nodeStringToString(nodeString: NodeString): string {
-    const nodeType = getNodeType(nodeString[0]);
-    return `${nodeType}: ${nodeString[1]}`;
+    const isArrayType = nodeString[0] === 'Array';
+    const nodeType = isArrayType ? 'Array' : getNodeType(nodeString[0]);
+    const nodeInnerAccess = nodeString[1];
+    if (Object.keys(nodeInnerAccess).length !== 1) {
+        console.error(nodeInnerAccess);
+        throw new Error(`What do I do with multiple inner accesses?`);
+    }
+    const firstKey = Object.keys(nodeInnerAccess)[0]!;
+    const firstKeyAccess = isArrayType ? `[${firstKey}]` : `.${firstKey}:`;
+    const nodeInnerAccessString = `${firstKeyAccess} ${nodeInnerAccess[firstKey]}`;
+
+    return `${nodeType}${nodeInnerAccessString}`;
 }
 
 export function nodeToString(node: tree.Node): string {
     const nodeStrings = innerNodeToString(node);
-    if (isNodeStringArray(nodeStrings)) {
-        return nodeStrings.map((nodeString) => nodeStringToString(nodeString)).join(' ');
-    } else {
-        return nodeStringToString(nodeStrings);
-    }
+    return nodeStrings.map((nodeString) => nodeStringToString(nodeString)).join(' ');
 }
