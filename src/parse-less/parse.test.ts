@@ -1,4 +1,4 @@
-import {assertInstanceOf} from 'augment-vir/dist/jest-only';
+import {assertInstanceOf} from 'augment-vir/dist/cjs/jest-only';
 import {render, tree} from 'less';
 import {parseTestFiles} from '../test/test-file-paths';
 import {parseLess, parseLessFile} from './parse';

@@ -293,7 +293,9 @@ declare namespace LessStatic {
             noSpacing: undefined;
             value: Variable[];
         }
-        class Extend extends Node {}
+        class Extend extends Node {
+            selector: Node;
+        }
         class Keyword extends Node {
             value: string;
         }
@@ -345,13 +347,49 @@ declare namespace LessStatic {
         class Value extends Node {
             value: Node[];
         }
-        class VariableCall extends Node {}
+        class VariableCall extends Node {
+            variable: string;
+        }
         // // more complicated than I want to deal with right now:
         // namespace mixin {
         //     Call: class MixinCall extends Node {};
         //     Definition: class Definition extends Node {};
         // }
     }
+
+    export type AnyNodeSubType =
+        | tree.Anonymous
+        | tree.Assignment
+        | tree.AtRule
+        | tree.Attribute
+        | tree.Call
+        | tree.Color
+        | tree.Combinator
+        | tree.Comment
+        | tree.Condition
+        | tree.Declaration
+        | tree.DetachedRuleset
+        | tree.Dimension
+        | tree.Element
+        | tree.Expression
+        | tree.Extend
+        | tree.Keyword
+        | tree.Import
+        | tree.JsEvalNode
+        | tree.NamespaceValue
+        | tree.Negative
+        | tree.Operation
+        | tree.Paren
+        | tree.Property
+        | tree.Quoted
+        | tree.Ruleset
+        | tree.Selector
+        | tree.UnicodeDescriptor
+        | tree.Unit
+        | tree.URL
+        | tree.Variable
+        | tree.Value
+        | tree.VariableCall;
 
     type FunctionRegistry = {
         _data: any;

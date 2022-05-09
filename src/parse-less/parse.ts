@@ -8,7 +8,7 @@ export type ParseResult = {
 };
 
 /**
- * Super simple wrapper function to less.js parsing.
+ * Super simple wrapper function for less.js parsing.
  *
  * @param input String of LESS to parse
  * @param options Options for the parser. Find the type definition to see available options.
@@ -27,7 +27,7 @@ export async function parseLess(input: string, options?: Options): Promise<Parse
 }
 
 /**
- * Super simple wrapper function to less.js parsing that reads the given file path and parses it as less
+ * Super simple wrapper function for less.js parsing that reads the given file path and parses it as less.
  *
  * @param filePath Path to file to parse
  * @param options Options for the parser. Find the type definition to see available options.

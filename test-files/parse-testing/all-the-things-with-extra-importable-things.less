@@ -26,15 +26,23 @@
 
 body {
     color: @var-definition;
+    color: @var-definition;
+    .mixin-new-syntax();
     .mixin-new-syntax();
     .mixin-old-syntax();
+    .mixin-old-syntax();
     
+    &:extend(.mixin-old-syntax);
     &:extend(.mixin-old-syntax);
     
     text-align: center;
     
     border-color: @map-definition[one];
+    border-color: @map-definition[one];
+    color: @map-definition[two];
     color: @map-definition[two];
     background-color: @map-definition[two];
+    background-color: @map-definition[two];
+    #namespace-definition.innerProperty();
     #namespace-definition.innerProperty();
 }

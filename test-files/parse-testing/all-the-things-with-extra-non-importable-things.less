@@ -1,4 +1,5 @@
 @import (reference) './simple-file';
+@import (reference) './simple-file';
 
 @var-definition: red;
 @detached-rules-definition: {
@@ -24,13 +25,46 @@
     }
 }
 
+@var-definition2: red;
+@detached-rules-definition2: {
+    color: orange;
+}
+@map-definition2: {
+    one: yellow;
+    two: green;
+}
+
+.mixin-new-syntax2() {
+    color: blue;
+}
+
+// just a class, but also can be used as a mixin
+.mixin-old-syntax2 {
+    color: purple;
+}
+
+#namespace-definition2() {
+    .innerProperty {
+        color: violet;
+    }
+}
+
+main {
+    color: red;
+    &.derp {
+      background-color: purple;  
+    }
+}
+
 body {
     color: @var-definition;
+    color: green;
     .mixin-new-syntax();
     .mixin-old-syntax();
     
     &:extend(.mixin-old-syntax);
     
+    text-align: center;
     text-align: center;
     
     border-color: @map-definition[one];

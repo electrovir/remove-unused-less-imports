@@ -1,4 +1,4 @@
-import {readDirRecursive} from 'augment-vir/dist/node-only';
+import {readDirRecursive} from 'augment-vir/dist/cjs/node-only';
 import {existsSync} from 'fs';
 import {readdir} from 'fs/promises';
 import {join} from 'path';
