@@ -299,7 +299,7 @@ declare namespace LessStatic {
             value: Variable[];
         }
         class Extend extends Node {
-            selector: Node;
+            selector: Selector;
         }
         class Keyword extends Node {
             value: string;
@@ -366,7 +366,9 @@ declare namespace LessStatic {
             variable: string;
         }
         export namespace mixin {
-            class Call extends MixinCall {}
+            class Call extends MixinCall {
+                selector: Selector;
+            }
             class Definition extends MixinDefinition {}
         }
     }

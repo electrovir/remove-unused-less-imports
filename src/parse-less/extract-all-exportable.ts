@@ -8,7 +8,7 @@ import {
 } from '../augments/node';
 import {walkLess} from './walk-less';
 
-export type ExportableNode = tree.Declaration | tree.Ruleset | tree.mixin.Definition;
+type ExportableNode = tree.Declaration | tree.Ruleset | tree.mixin.Definition;
 
 function getRulesetName(node: tree.Ruleset): string | undefined {
     if (typeof node?.selectors?.[0]?.elements?.[0]?.value === 'string') {
@@ -17,7 +17,7 @@ function getRulesetName(node: tree.Ruleset): string | undefined {
     return undefined;
 }
 
-export function getAllExportableNodes(context: tree.Node): ExportableNode[] {
+function getAllExportableNodes(context: tree.Node): ExportableNode[] {
     const exportableNodes: ExportableNode[] = [];
 
     walkLess(
@@ -56,8 +56,9 @@ export function getAllExportableNodes(context: tree.Node): ExportableNode[] {
     return exportableNodes;
 }
 
-export function getExportableNodeNames(exportableNodes: ExportableNode[]): string[] {
-    return exportableNodes.map((node) => {
+export function getExportableNodeNames(context: tree.Node): Set<string> {
+    const exportableNodes = getAllExportableNodes(context);
+    const names = exportableNodes.map((node) => {
         if (node instanceof tree.Declaration) {
             if (typeof node.name === 'string') {
                 return node.name;
@@ -73,4 +74,6 @@ export function getExportableNodeNames(exportableNodes: ExportableNode[]): strin
         console.error(jsonSerializedNode(node));
         throw new Error(`Failed to extract node name from "${node.type}" type of node.`);
     });
+
+    return new Set(names);
 }

@@ -3,11 +3,11 @@
 @var-definition: red;
 @detached-rules-definition: {
     color: orange;
-}
+};
 @map-definition: {
     one: yellow;
     two: green;
-}
+};
 
 .mixin-new-syntax() {
     color: blue;
@@ -16,6 +16,10 @@
 // just a class, but also can be used as a mixin
 .mixin-old-syntax {
     color: purple;
+}
+
+.mixin-another() {
+    color: brown;
 }
 
 #namespace-definition() {
@@ -31,12 +35,12 @@ body {
     .mixin-new-syntax();
     .mixin-old-syntax();
     .mixin-old-syntax();
-    
-    &:extend(.mixin-old-syntax);
-    &:extend(.mixin-old-syntax);
-    
+
+    &:extend(.mixin-another);
+    &:extend(.mixin-another);
+
     text-align: center;
-    
+
     border-color: @map-definition[one];
     border-color: @map-definition[one];
     color: @map-definition[two];

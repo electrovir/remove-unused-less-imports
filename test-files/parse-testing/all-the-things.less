@@ -18,6 +18,10 @@
     color: purple;
 }
 
+.mixin-another() {
+    color: brown;
+}
+
 #namespace-definition() {
     .innerProperty {
         color: violet;
@@ -29,7 +33,7 @@ body {
     .mixin-new-syntax();
     .mixin-old-syntax();
     
-    &:extend(.mixin-old-syntax);
+    &:extend(.mixin-another);
     
     text-align: center;
     

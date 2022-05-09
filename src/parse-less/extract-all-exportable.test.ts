@@ -1,21 +1,16 @@
-import {awaitedForEach} from 'augment-vir';
-import {NodeType, tree} from 'less';
-import {getNodeType, jsonSerializedNode} from '../augments/node';
-import {collapseJsonWhiteSpace} from '../augments/string';
-import {Constructor} from '../augments/type';
+import {tree} from 'less';
 import {parseTestFiles} from '../test/test-file-paths';
-import {getAllExportableNodes, getExportableNodeNames} from './extract-all-exportable';
-import {parseLess, parseLessFile} from './parse';
-import {walkLess} from './walk-less';
+import {Assumption, testAssumptions} from './assumption-test-helpers';
+import {getExportableNodeNames} from './extract-all-exportable';
+import {parseLessFile} from './parse';
 
-describe(getAllExportableNodes.name, () => {
+describe(getExportableNodeNames.name, () => {
     async function testExportableNodeNames(
         filePath: string,
         expectedNodeNames: string[],
     ): Promise<void> {
-        const exportableNodes = getAllExportableNodes((await parseLessFile(filePath)).root);
-        const actualNodeNames = getExportableNodeNames(exportableNodes);
-        expect(actualNodeNames.sort()).toEqual(expectedNodeNames);
+        const actualNodeNames = getExportableNodeNames((await parseLessFile(filePath)).root);
+        expect(Array.from(actualNodeNames).sort()).toEqual(expectedNodeNames);
     }
 
     it('should extract all exportable items', async () => {
@@ -27,6 +22,7 @@ describe(getAllExportableNodes.name, () => {
                 '@map-definition',
                 '.mixin-new-syntax',
                 '.mixin-old-syntax',
+                '.mixin-another',
                 '#namespace-definition',
                 'body',
             ].sort(),
@@ -34,67 +30,11 @@ describe(getAllExportableNodes.name, () => {
     });
 
     describe('assumptions', () => {
-        async function getFirstNodeOfType<T extends tree.Node | undefined>(
-            codeToParse: string,
-            nodeConstructor: T extends undefined ? undefined : Constructor<T>,
-        ): Promise<T> {
-            let nodeToReturn: T | undefined;
-
-            walkLess((await parseLess(codeToParse)).root, (node) => {
-                // bypass the root node
-                if (node instanceof tree.Ruleset && node.root) {
-                    return false;
-                }
-                if (nodeConstructor) {
-                    if (node instanceof nodeConstructor!) {
-                        nodeToReturn = node as T;
-                        return true;
-                    }
-                } else {
-                    nodeToReturn = node as any;
-                    return true;
-                }
-                return false;
-            });
-
-            if (nodeConstructor && !nodeToReturn) {
-                throw new Error(
-                    `Did not find node of type "${nodeConstructor.name}" in "${codeToParse}"`,
-                );
-            }
-            if (!nodeConstructor && nodeToReturn) {
-                console.error(nodeToReturn);
-                throw new Error(
-                    `Didn't expect to find any nodes but found "${nodeToReturn.type}" in "${codeToParse}"`,
-                );
-            }
-            return nodeToReturn as T;
-        }
-
         it('should be correct assumptions', async () => {
-            type Assumption = {
-                code: string;
-                nodeConstructor: Constructor<tree.Node> | undefined;
-                matchObject: Record<string, any>;
-                serialized: string;
-                log?: true;
-            };
-
             const assumptions: Assumption[] = [
                 {
                     code: `@my-var: blue;`,
                     nodeConstructor: tree.Declaration,
-                    matchObject: {
-                        name: '@my-var',
-                        type: NodeType.Declaration,
-                        value: {
-                            value: 'blue',
-                        },
-                        important: '',
-                        merge: false,
-                        inline: false,
-                        variable: true,
-                    },
                     serialized: `{
                         "type": "Declaration",
                         "name": "@my-var",
@@ -116,15 +56,11 @@ describe(getAllExportableNodes.name, () => {
                 {
                     code: ``,
                     nodeConstructor: undefined,
-                    matchObject: {},
                     serialized: '',
                 },
                 {
                     code: `.new-style-mixin-definition() {color: blue;}`,
                     nodeConstructor: tree.mixin.Definition,
-                    matchObject: {
-                        type: NodeType.MixinDefinition,
-                    },
                     serialized: `{
                         "type": "MixinDefinition",
                         "name": ".new-style-mixin-definition",
@@ -172,37 +108,6 @@ describe(getAllExportableNodes.name, () => {
                 {
                     code: `.old-style-mixin-definition {color: blue;}`,
                     nodeConstructor: tree.Ruleset,
-                    matchObject: {
-                        type: NodeType.Ruleset,
-                        selectors: [
-                            {
-                                elements: [
-                                    {
-                                        value: '.old-style-mixin-definition',
-                                    },
-                                ],
-                            },
-                        ],
-                        rules: [
-                            {
-                                name: [
-                                    {
-                                        type: NodeType.Keyword,
-                                        value: 'color',
-                                    },
-                                ],
-                                value: {
-                                    type: NodeType.Anonymous,
-                                    value: 'blue',
-                                },
-                                type: NodeType.Declaration,
-                            },
-                        ],
-                        parent: {
-                            root: true,
-                            firstRoot: true,
-                        },
-                    },
                     serialized: `{
                         "type": "Ruleset",
                         "selectors": {
@@ -249,10 +154,6 @@ describe(getAllExportableNodes.name, () => {
                 {
                     code: `#namespace-definition() {.innerProperty {color: violet;}}`,
                     nodeConstructor: tree.mixin.Definition,
-                    matchObject: {
-                        name: '#namespace-definition',
-                        type: NodeType.MixinDefinition,
-                    },
                     serialized: `{
                         "type": "MixinDefinition",
                         "name": "#namespace-definition",
@@ -330,16 +231,6 @@ describe(getAllExportableNodes.name, () => {
                 {
                     code: `@detached-rules-definition: {color: orange;}`,
                     nodeConstructor: tree.Declaration,
-                    matchObject: {
-                        name: '@detached-rules-definition',
-                        value: {
-                            ruleset: {
-                                type: NodeType.Ruleset,
-                            },
-                        },
-                        type: NodeType.Declaration,
-                        variable: true,
-                    },
                     serialized: `{
                         "type": "Declaration",
                         "name": "@detached-rules-definition",
@@ -382,15 +273,6 @@ describe(getAllExportableNodes.name, () => {
                 {
                     code: `@map-definition: {one: yellow; two: green;}`,
                     nodeConstructor: tree.Declaration,
-                    matchObject: {
-                        name: '@map-definition',
-                        value: {
-                            ruleset: {
-                                type: NodeType.Ruleset,
-                            },
-                        },
-                        variable: true,
-                    },
                     serialized: `{
                         "type": "Declaration",
                         "name": "@map-definition",
@@ -448,34 +330,7 @@ describe(getAllExportableNodes.name, () => {
                 },
             ];
 
-            expect.assertions(assumptions.length * 2);
-
-            await awaitedForEach(assumptions, async (assumption) => {
-                const foundNode = await getFirstNodeOfType<any>(
-                    assumption.code,
-                    assumption.nodeConstructor,
-                );
-
-                if (assumption.log) {
-                    console.info({[foundNode.type]: foundNode});
-                }
-
-                try {
-                    if (assumption.nodeConstructor) {
-                        expect(foundNode).toMatchObject(assumption.matchObject);
-                        expect(collapseJsonWhiteSpace(jsonSerializedNode(foundNode, 0))).toBe(
-                            collapseJsonWhiteSpace(assumption.serialized),
-                        );
-                    } else {
-                        expect(foundNode).toBeUndefined();
-                        expect(assumption.serialized).toBeFalsy();
-                    }
-                } catch (error) {
-                    const nodeType = foundNode == undefined ? undefined : getNodeType(foundNode);
-                    console.error(`Failed on node of type "${nodeType}"`);
-                    throw error;
-                }
-            });
+            await testAssumptions(assumptions);
         });
     });
 });
