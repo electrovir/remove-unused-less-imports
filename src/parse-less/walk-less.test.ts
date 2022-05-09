@@ -187,16 +187,18 @@ describe(walkLess.name, () => {
     ): Promise<void> {
         const nodes = await getNodesFromFile(filePath);
 
-        const nodeLines: NodeLines = nodeTypeFilterList.reduce((accum, nodeKey) => {
-            const nodesArray = nodes.get(nodeKey);
-            if (nodesArray) {
-                accum[nodeKey as NodeType] = nodesArray?.map((node) => {
-                    const nodeString = nodeToString(node);
-                    return nodeString;
-                });
-            }
-            return accum;
-        }, {} as Writeable<NodeLines>);
+        const nodeLines: NodeLines = nodeTypeFilterList
+            .filter((nodeType) => nodeType !== NodeType.Ruleset)
+            .reduce((accum, nodeKey) => {
+                const nodesArray = nodes.get(nodeKey);
+                if (nodesArray) {
+                    accum[nodeKey as NodeType] = nodesArray?.map((node) => {
+                        const nodeString = nodeToString(node);
+                        return nodeString;
+                    });
+                }
+                return accum;
+            }, {} as Writeable<NodeLines>);
 
         expect(nodeLines).toEqual(expectedNodeLines);
     }
@@ -325,20 +327,6 @@ describe(walkLess.name, () => {
                 'MixinDefinition.rules: -> Array[0] -> Declaration.name: -> Array[0] -> Keyword.value: color',
                 'MixinDefinition.rules: -> Array[0] -> Ruleset.rules: -> Array[0] -> Declaration.name: -> Array[0] -> Keyword.value: color',
             ],
-            [NodeType.Ruleset]: [
-                'Ruleset.rules: -> Array[0] -> Import.path: -> Quoted.value: ./simple-file Array[1] -> Import.path: -> Quoted.value: ./simple-file Array[2] -> Declaration.name: @var-definition Array[3] -> Declaration.name: @detached-rules-definition Array[4] -> Declaration.name: @map-definition Array[5] -> MixinDefinition.rules: -> Array[0] -> Declaration.name: -> Array[0] -> Keyword.value: color Array[6] -> Comment.value: // just a class, but also can be used as a mixin Array[7] -> Ruleset.rules: -> Array[0] -> Declaration.name: -> Array[0] -> Keyword.value: color Array[8] -> MixinDefinition.rules: -> Array[0] -> Ruleset.rules: -> Array[0] -> Declaration.name: -> Array[0] -> Keyword.value: color Array[9] -> Declaration.name: @var-definition2 Array[10] -> Declaration.name: @detached-rules-definition2 Array[11] -> Declaration.name: @map-definition2 Array[12] -> MixinDefinition.rules: -> Array[0] -> Declaration.name: -> Array[0] -> Keyword.value: color Array[13] -> Comment.value: // just a class, but also can be used as a mixin Array[14] -> Ruleset.rules: -> Array[0] -> Declaration.name: -> Array[0] -> Keyword.value: color Array[15] -> MixinDefinition.rules: -> Array[0] -> Ruleset.rules: -> Array[0] -> Declaration.name: -> Array[0] -> Keyword.value: color Array[16] -> Ruleset.rules: -> Array[0] -> Declaration.name: -> Array[0] -> Keyword.value: color Array[1] -> Ruleset.rules: -> Array[0] -> Declaration.name: -> Array[0] -> Keyword.value: background-color Array[17] -> Ruleset.rules: -> Array[0] -> Declaration.name: -> Array[0] -> Keyword.value: color Array[1] -> Declaration.name: -> Array[0] -> Keyword.value: color Array[2] -> MixinCall.selector: -> Selector.elements: -> Array[0] -> Element.value: .mixin-new-syntax Array[3] -> MixinCall.selector: -> Selector.elements: -> Array[0] -> Element.value: .mixin-old-syntax Array[4] -> Extend.selector: -> Selector.elements: -> Array[0] -> Element.value: .mixin-old-syntax Array[5] -> Declaration.name: -> Array[0] -> Keyword.value: text-align Array[6] -> Declaration.name: -> Array[0] -> Keyword.value: text-align Array[7] -> Declaration.name: -> Array[0] -> Keyword.value: border-color Array[8] -> Declaration.name: -> Array[0] -> Keyword.value: color Array[9] -> Declaration.name: -> Array[0] -> Keyword.value: background-color Array[10] -> MixinCall.selector: -> Selector.elements: -> Array[0] -> Element.value: #namespace-definition Array[1] -> Element.value: .innerProperty',
-                'Ruleset.rules: -> Array[0] -> Declaration.name: -> Array[0] -> Keyword.value: color',
-                'Ruleset.rules: -> Array[0] -> Declaration.name: -> Array[0] -> Keyword.value: one Array[1] -> Declaration.name: -> Array[0] -> Keyword.value: two',
-                'Ruleset.rules: -> Array[0] -> Declaration.name: -> Array[0] -> Keyword.value: color',
-                'Ruleset.rules: -> Array[0] -> Declaration.name: -> Array[0] -> Keyword.value: color',
-                'Ruleset.rules: -> Array[0] -> Declaration.name: -> Array[0] -> Keyword.value: color',
-                'Ruleset.rules: -> Array[0] -> Declaration.name: -> Array[0] -> Keyword.value: one Array[1] -> Declaration.name: -> Array[0] -> Keyword.value: two',
-                'Ruleset.rules: -> Array[0] -> Declaration.name: -> Array[0] -> Keyword.value: color',
-                'Ruleset.rules: -> Array[0] -> Declaration.name: -> Array[0] -> Keyword.value: color',
-                'Ruleset.rules: -> Array[0] -> Declaration.name: -> Array[0] -> Keyword.value: color Array[1] -> Ruleset.rules: -> Array[0] -> Declaration.name: -> Array[0] -> Keyword.value: background-color',
-                'Ruleset.rules: -> Array[0] -> Declaration.name: -> Array[0] -> Keyword.value: background-color',
-                'Ruleset.rules: -> Array[0] -> Declaration.name: -> Array[0] -> Keyword.value: color Array[1] -> Declaration.name: -> Array[0] -> Keyword.value: color Array[2] -> MixinCall.selector: -> Selector.elements: -> Array[0] -> Element.value: .mixin-new-syntax Array[3] -> MixinCall.selector: -> Selector.elements: -> Array[0] -> Element.value: .mixin-old-syntax Array[4] -> Extend.selector: -> Selector.elements: -> Array[0] -> Element.value: .mixin-old-syntax Array[5] -> Declaration.name: -> Array[0] -> Keyword.value: text-align Array[6] -> Declaration.name: -> Array[0] -> Keyword.value: text-align Array[7] -> Declaration.name: -> Array[0] -> Keyword.value: border-color Array[8] -> Declaration.name: -> Array[0] -> Keyword.value: color Array[9] -> Declaration.name: -> Array[0] -> Keyword.value: background-color Array[10] -> MixinCall.selector: -> Selector.elements: -> Array[0] -> Element.value: #namespace-definition Array[1] -> Element.value: .innerProperty',
-            ],
         };
 
         await testNodeLines(
@@ -356,12 +344,136 @@ describe(walkLess.name, () => {
             [NodeType.Declaration]: [
                 'Declaration.name: @myVar',
             ],
-            [NodeType.Ruleset]: [
-                'Ruleset.rules: -> Array[0] -> Declaration.name: @myVar',
-            ],
         };
 
         await testNodeLines(parseTestFiles.simpleFile, simpleFileLines);
+    });
+
+    it('should read all node lines for all the things file', async () => {
+        const allThingsLines: NodeLines = {
+            [NodeType.Anonymous]: [
+                'Anonymous.value: red',
+                'Anonymous.value: orange',
+                'Anonymous.value: yellow',
+                'Anonymous.value: green',
+                'Anonymous.value: blue',
+                'Anonymous.value: purple',
+                'Anonymous.value: violet',
+                'Anonymous.value: center',
+            ],
+            [NodeType.Combinator]: [
+                'Combinator.value: ',
+                'Combinator.value:  ',
+                'Combinator.value: ',
+                'Combinator.value:  ',
+                'Combinator.value:  ',
+                'Combinator.value: ',
+                'Combinator.value: ',
+                'Combinator.value: ',
+                'Combinator.value: ',
+                'Combinator.value: ',
+            ],
+            [NodeType.Comment]: [
+                'Comment.value: // just a class, but also can be used as a mixin',
+            ],
+            [NodeType.Declaration]: [
+                'Declaration.name: @var-definition',
+                'Declaration.name: @detached-rules-definition',
+                'Declaration.name: -> Array[0] -> Keyword.value: color',
+                'Declaration.name: @map-definition',
+                'Declaration.name: -> Array[0] -> Keyword.value: one',
+                'Declaration.name: -> Array[0] -> Keyword.value: two',
+                'Declaration.name: -> Array[0] -> Keyword.value: color',
+                'Declaration.name: -> Array[0] -> Keyword.value: color',
+                'Declaration.name: -> Array[0] -> Keyword.value: color',
+                'Declaration.name: -> Array[0] -> Keyword.value: color',
+                'Declaration.name: -> Array[0] -> Keyword.value: text-align',
+                'Declaration.name: -> Array[0] -> Keyword.value: border-color',
+                'Declaration.name: -> Array[0] -> Keyword.value: color',
+                'Declaration.name: -> Array[0] -> Keyword.value: background-color',
+            ],
+            [NodeType.DetachedRuleset]: [
+                'DetachedRuleset.ruleset: -> Ruleset.rules: -> Array[0] -> Declaration.name: -> Array[0] -> Keyword.value: color',
+                'DetachedRuleset.ruleset: -> Ruleset.rules: -> Array[0] -> Declaration.name: -> Array[0] -> Keyword.value: one Array[1] -> Declaration.name: -> Array[0] -> Keyword.value: two',
+            ],
+            [NodeType.Element]: [
+                'Element.value: .mixin-new-syntax',
+                'Element.value: .mixin-old-syntax',
+                'Element.value: #namespace-definition',
+                'Element.value: .innerProperty',
+                'Element.value: body',
+                'Element.value: .mixin-new-syntax',
+                'Element.value: .mixin-old-syntax',
+                'Element.value: .mixin-old-syntax',
+                'Element.value: #namespace-definition',
+                'Element.value: .innerProperty',
+            ],
+            [NodeType.Expression]: [
+                'Expression.value: -> Array[0] -> Variable.name: @var-definition',
+                'Expression.value: -> Array[0] -> NamespaceValue.value: -> VariableCall.variable: @map-definition NamespaceValue.lookups.0: one',
+                'Expression.value: -> Array[0] -> NamespaceValue.value: -> VariableCall.variable: @map-definition NamespaceValue.lookups.0: two',
+                'Expression.value: -> Array[0] -> NamespaceValue.value: -> VariableCall.variable: @map-definition NamespaceValue.lookups.0: two',
+            ],
+            [NodeType.Extend]: [
+                'Extend.selector: -> Selector.elements: -> Array[0] -> Element.value: .mixin-old-syntax',
+            ],
+            [NodeType.Import]: [
+                'Import.path: -> Quoted.value: ./simple-file',
+            ],
+            [NodeType.Keyword]: [
+                'Keyword.value: color',
+                'Keyword.value: one',
+                'Keyword.value: two',
+                'Keyword.value: color',
+                'Keyword.value: color',
+                'Keyword.value: color',
+                'Keyword.value: color',
+                'Keyword.value: text-align',
+                'Keyword.value: border-color',
+                'Keyword.value: color',
+                'Keyword.value: background-color',
+            ],
+            [NodeType.MixinCall]: [
+                'MixinCall.selector: -> Selector.elements: -> Array[0] -> Element.value: .mixin-new-syntax',
+                'MixinCall.selector: -> Selector.elements: -> Array[0] -> Element.value: .mixin-old-syntax',
+                'MixinCall.selector: -> Selector.elements: -> Array[0] -> Element.value: #namespace-definition Array[1] -> Element.value: .innerProperty',
+            ],
+            [NodeType.MixinDefinition]: [
+                'MixinDefinition.rules: -> Array[0] -> Declaration.name: -> Array[0] -> Keyword.value: color',
+                'MixinDefinition.rules: -> Array[0] -> Ruleset.rules: -> Array[0] -> Declaration.name: -> Array[0] -> Keyword.value: color',
+            ],
+            [NodeType.NamespaceValue]: [
+                'NamespaceValue.value: -> VariableCall.variable: @map-definition NamespaceValue.lookups.0: one',
+                'NamespaceValue.value: -> VariableCall.variable: @map-definition NamespaceValue.lookups.0: two',
+                'NamespaceValue.value: -> VariableCall.variable: @map-definition NamespaceValue.lookups.0: two',
+            ],
+            [NodeType.Selector]: [
+                'Selector.elements: -> Array[0] -> Element.value: .mixin-new-syntax',
+                'Selector.elements: -> Array[0] -> Element.value: .mixin-old-syntax',
+                'Selector.elements: -> Array[0] -> Element.value: #namespace-definition',
+                'Selector.elements: -> Array[0] -> Element.value: .innerProperty',
+                'Selector.elements: -> Array[0] -> Element.value: body',
+                'Selector.elements: -> Array[0] -> Element.value: .mixin-new-syntax',
+                'Selector.elements: -> Array[0] -> Element.value: .mixin-old-syntax',
+                'Selector.elements: -> Array[0] -> Element.value: .mixin-old-syntax',
+                'Selector.elements: -> Array[0] -> Element.value: #namespace-definition Array[1] -> Element.value: .innerProperty',
+            ],
+            [NodeType.Value]: [
+                'Value.value: -> Array[0] -> Expression.value: -> Array[0] -> Variable.name: @var-definition',
+                'Value.value: -> Array[0] -> Expression.value: -> Array[0] -> NamespaceValue.value: -> VariableCall.variable: @map-definition NamespaceValue.lookups.0: one',
+                'Value.value: -> Array[0] -> Expression.value: -> Array[0] -> NamespaceValue.value: -> VariableCall.variable: @map-definition NamespaceValue.lookups.0: two',
+                'Value.value: -> Array[0] -> Expression.value: -> Array[0] -> NamespaceValue.value: -> VariableCall.variable: @map-definition NamespaceValue.lookups.0: two',
+            ],
+            [NodeType.Variable]: [
+                'Variable.name: @var-definition',
+            ],
+            [NodeType.VariableCall]: [
+                'VariableCall.variable: @map-definition',
+                'VariableCall.variable: @map-definition',
+                'VariableCall.variable: @map-definition',
+            ],
+        };
+        await testNodeLines(parseTestFiles.allTheThings, allThingsLines);
     });
 });
 

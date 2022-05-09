@@ -40,6 +40,32 @@ describe(parseLess.name, () => {
 
         expect(valueValueValue.name).toBe(varName);
     });
+
+    const mixinName = 'my-mixin';
+
+    it('should extract a mixin definition', async () => {
+        const parseResult = await parseLess(`.${mixinName}() {color: blue;}`);
+
+        assertInstanceOf(parseResult.root, tree.Ruleset);
+
+        const rules = parseResult.root.rules;
+        expect(rules).toHaveLength(1);
+
+        const firstRule = rules[0];
+        assertInstanceOf(firstRule, tree.mixin.Definition);
+    });
+
+    it('should extract old mixin definition', async () => {
+        const parseResult = await parseLess(`.${mixinName} {color: blue;}`);
+
+        assertInstanceOf(parseResult.root, tree.Ruleset);
+
+        const rules = parseResult.root.rules;
+        expect(rules).toHaveLength(1);
+
+        const firstRule = rules[0];
+        assertInstanceOf(firstRule, tree.Ruleset);
+    });
 });
 
 describe(render.name, () => {

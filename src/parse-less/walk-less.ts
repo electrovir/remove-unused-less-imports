@@ -11,6 +11,7 @@ type WalkOptions = {
 
 export function walkLess(
     node: tree.Node,
+    /** Return something truthy to exit walking early */
     callback: (node: tree.Node) => any,
     options: WalkOptions = {},
 ): boolean {

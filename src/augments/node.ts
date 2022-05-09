@@ -1,5 +1,6 @@
 import {typedHasOwnProperty} from 'augment-vir';
 import {AnyNodeSubType, NodeType, tree} from 'less';
+import {Constructor} from './type';
 
 export const allNodeTypes: Readonly<NodeType[]> = [
     NodeType.Anonymous,
@@ -39,6 +40,64 @@ export const allNodeTypes: Readonly<NodeType[]> = [
     NodeType.Variable,
 ] as const;
 
+export const allNodeConstructors: Readonly<Constructor<tree.Node>[]> = [
+    tree.Anonymous,
+    tree.Assignment,
+    tree.AtRule,
+    tree.Attribute,
+    tree.Call,
+    tree.Color,
+    tree.Combinator,
+    tree.Comment,
+    tree.Condition,
+    tree.Declaration,
+    tree.DetachedRuleset,
+    tree.Dimension,
+    tree.Element,
+    tree.Expression,
+    tree.Extend,
+    tree.Import,
+    tree.JavaScript,
+    tree.Keyword,
+    tree.Media,
+    tree.mixin.Call,
+    tree.mixin.Definition,
+    tree.NamespaceValue,
+    tree.Negative,
+    tree.Operation,
+    tree.Paren,
+    tree.Property,
+    tree.Quoted,
+    tree.Ruleset,
+    tree.Selector,
+    tree.UnicodeDescriptor,
+    tree.Unit,
+    tree.URL,
+    tree.Value,
+    tree.VariableCall,
+    tree.Variable,
+] as const;
+
+export const mappedNodeConstructors = allNodeTypes.reduce((accum, currentNodeType, index) => {
+    accum[currentNodeType] = allNodeConstructors[index]!;
+    return accum;
+}, {} as Record<NodeType, Constructor<tree.Node>>);
+
+export function testAllNodeConstructors(node: tree.Node): NodeType[] {
+    const matchingConstructorEntries: [NodeType, Constructor<tree.Node>][] = (
+        Object.entries(mappedNodeConstructors) as [NodeType, Constructor<tree.Node>][]
+    ).filter(
+        ([
+            key,
+            value,
+        ]) => {
+            return node instanceof value;
+        },
+    );
+
+    return matchingConstructorEntries.map((entry) => entry[0]);
+}
+
 export function getNodeType(node: Pick<tree.Node, 'type'>): NodeType {
     const type = node.type;
     const constructorName = node.constructor.name;
@@ -46,8 +105,7 @@ export function getNodeType(node: Pick<tree.Node, 'type'>): NodeType {
         return type;
     } else {
         console.error({node});
-        console.error(`Has to use constructor for ${constructorName}`);
-        return constructorName as NodeType;
+        throw new Error(`Has to use constructor for ${constructorName}`);
     }
 }
 

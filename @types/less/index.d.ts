@@ -280,7 +280,8 @@ declare namespace LessStatic {
             name: Keyword[] | string;
             value: Value | Anonymous;
             important: string;
-            variabe: boolean;
+            variable: boolean;
+            inline: boolean;
         }
         class DetachedRuleset extends Node {
             ruleset: Node;
@@ -363,12 +364,15 @@ declare namespace LessStatic {
         class VariableCall extends Node {
             variable: string;
         }
-        // // more complicated than I want to deal with right now:
-        // namespace mixin {
-        //     Call: class MixinCall extends Node {};
-        //     Definition: class Definition extends Node {};
-        // }
+        // more complicated than I want to deal with right now:
+        export const mixin = {
+            Call: MixinCall,
+            Definition: MixinDefinition,
+        };
     }
+
+    class MixinCall extends tree.Node {}
+    class MixinDefinition extends tree.Node {}
 
     export type AnyNodeSubType =
         | tree.Anonymous
@@ -386,9 +390,11 @@ declare namespace LessStatic {
         | tree.Element
         | tree.Expression
         | tree.Extend
-        | tree.Keyword
         | tree.Import
         | tree.JsEvalNode
+        | tree.Keyword
+        | MixinCall
+        | MixinDefinition
         | tree.NamespaceValue
         | tree.Negative
         | tree.Operation
@@ -400,8 +406,8 @@ declare namespace LessStatic {
         | tree.UnicodeDescriptor
         | tree.Unit
         | tree.URL
-        | tree.Variable
         | tree.Value
+        | tree.Variable
         | tree.VariableCall;
 
     type FunctionRegistry = {
