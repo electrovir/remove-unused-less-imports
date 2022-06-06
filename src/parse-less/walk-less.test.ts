@@ -30,25 +30,25 @@ describe(walkLess.name, () => {
     ];
 
     const allTheThingsNodeCounts: Partial<Readonly<Record<NodeType, number>>> = {
-        [NodeType.Anonymous]: 9,
-        [NodeType.Combinator]: 11,
+        [NodeType.Anonymous]: 10,
+        [NodeType.Combinator]: 12,
         [NodeType.Comment]: 1,
-        [NodeType.Declaration]: 15,
+        [NodeType.Declaration]: 17,
         [NodeType.DetachedRuleset]: 2,
-        [NodeType.Element]: 11,
-        [NodeType.Expression]: 4,
+        [NodeType.Element]: 12,
+        [NodeType.Expression]: 5,
         [NodeType.Extend]: 1,
         [NodeType.Import]: 1,
-        [NodeType.Keyword]: 12,
+        [NodeType.Keyword]: 14,
         [NodeType.MixinCall]: 3,
         [NodeType.MixinDefinition]: 3,
         // usage of a namespace: can be imported
         [NodeType.NamespaceValue]: 3,
-        [NodeType.Ruleset]: 6,
-        [NodeType.Selector]: 10,
+        [NodeType.Ruleset]: 7,
+        [NodeType.Selector]: 11,
         // includes used imports but also every other value
-        [NodeType.Value]: 4,
-        [NodeType.Variable]: 1,
+        [NodeType.Value]: 5,
+        [NodeType.Variable]: 2,
         [NodeType.VariableCall]: 3,
     };
 
@@ -501,8 +501,12 @@ describe(render.name, () => {
                 `.mixin-old-syntax {
   color: purple;
 }
+another-selector {
+  color: blue;
+}
 body {
   color: red;
+  background-color: blue;
   color: blue;
   color: purple;
   text-align: center;

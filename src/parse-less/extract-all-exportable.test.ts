@@ -2,19 +2,27 @@ import {tree} from 'less';
 import {parseTestFiles} from '../test/test-file-paths';
 import {Assumption, testAssumptions} from './assumption-test-helpers';
 import {getExportableNodeNames} from './extract-all-exportable';
-import {parseLessFile} from './parse';
+import {parseLess, parseLessFile} from './parse';
 
 describe(getExportableNodeNames.name, () => {
-    async function testExportableNodeNames(
+    function expectNodeNames(context: tree.Node, expected: string[]) {
+        const actualNodeNames = getExportableNodeNames(context);
+        expect(Array.from(actualNodeNames).sort()).toEqual(expected);
+    }
+
+    async function testExportableNodeNamesFromFile(
         filePath: string,
         expectedNodeNames: string[],
     ): Promise<void> {
-        const actualNodeNames = getExportableNodeNames((await parseLessFile(filePath)).root);
-        expect(Array.from(actualNodeNames).sort()).toEqual(expectedNodeNames);
+        expectNodeNames((await parseLessFile(filePath)).root, expectedNodeNames);
+    }
+
+    async function testExportableNodeNamesFromCode(code: string, expectedNodeNames: string[]) {
+        expectNodeNames((await parseLess(code)).root, expectedNodeNames);
     }
 
     it('should extract all exportable items', async () => {
-        await testExportableNodeNames(
+        await testExportableNodeNamesFromFile(
             parseTestFiles.allTheThings,
             [
                 '@var-definition',
@@ -24,7 +32,16 @@ describe(getExportableNodeNames.name, () => {
                 '.mixin-old-syntax',
                 '.mixin-another',
                 '#namespace-definition',
-                'body',
+            ].sort(),
+        );
+    });
+
+    it('should extract all exports with multiple selectors', async () => {
+        await testExportableNodeNamesFromCode(
+            `#id-name, .class-name {color: blue;}`,
+            [
+                '#id-name',
+                '.class-name',
             ].sort(),
         );
     });
@@ -50,6 +67,119 @@ describe(getExportableNodeNames.name, () => {
                         "_index": 0,
                         "inline": false,
                         "variable": true,
+                        "allowRoot": true
+                    }`,
+                },
+                {
+                    code: `#id-name, .class-name {color: blue;}`,
+                    nodeConstructor: tree.Ruleset,
+                    serialized: `{
+                        "type": "Ruleset",
+                        "selectors": {
+                            "0": {
+                                "type": "Selector",
+                                "evaldCondition": true,
+                                "_index": 0,
+                                "elements": {
+                                    "0": {
+                                        "type": "Element",
+                                        "combinator": {"type": "Combinator", "value": "", "emptyOrWhitespace": true},
+                                        "value": "#id-name",
+                                        "isVariable": false,
+                                        "_index": 0
+                                    }
+                                }
+                            },
+                            "1": {
+                                "type": "Selector",
+                                "evaldCondition": true,
+                                "_index": 10,
+                                "elements": {
+                                    "0": {
+                                        "type": "Element",
+                                        "combinator": {"type": "Combinator", "value": " ", "emptyOrWhitespace": true},
+                                        "value": ".class-name",
+                                        "isVariable": false,
+                                        "_index": 10
+                                    }
+                                }
+                            }
+                        },
+                        "rules": {
+                            "0": {
+                                "type": "Declaration",
+                                "name": {"0": {"type": "Keyword", "value": "color"}},
+                                "value": {
+                                    "type": "Anonymous",
+                                    "value": "blue",
+                                    "_index": 30,
+                                    "rulesetLike": false,
+                                    "allowRoot": true
+                                },
+                                "important": "",
+                                "merge": false,
+                                "_index": 23,
+                                "inline": false,
+                                "allowRoot": true
+                            }
+                        },
+                        "_lookups": {},
+                        "_variables": null,
+                        "_properties": null,
+                        "strictImports": false,
+                        "allowRoot": true
+                    }`,
+                },
+                {
+                    code: `#id-name .class-name {color: blue;}`,
+                    nodeConstructor: tree.Ruleset,
+                    serialized: `{
+                        "type": "Ruleset",
+                        "selectors": {
+                            "0": {
+                                "type": "Selector",
+                                "evaldCondition": true,
+                                "_index": 0,
+                                "elements": {
+                                    "0": {
+                                        "type": "Element",
+                                        "combinator": {"type": "Combinator", "value": "", "emptyOrWhitespace": true},
+                                        "value": "#id-name",
+                                        "isVariable": false,
+                                        "_index": 0
+                                    },
+                                    "1": {
+                                        "type": "Element",
+                                        "combinator": {"type": "Combinator", "value": " ", "emptyOrWhitespace": true},
+                                        "value": ".class-name",
+                                        "isVariable": false,
+                                        "_index": 9
+                                    }
+                                }
+                            }
+                        },
+                        "rules": {
+                            "0": {
+                                "type": "Declaration",
+                                "name": {"0": {"type": "Keyword", "value": "color"}},
+                                "value": {
+                                    "type": "Anonymous",
+                                    "value": "blue",
+                                    "_index": 29,
+                                    "rulesetLike": false,
+                                    "allowRoot": true
+                                },
+                                "important": "",
+                                "merge": false,
+                                "_index": 22,
+                                "inline": false,
+                                "allowRoot": true
+                            }
+                        },
+                        "_lookups": {},
+                        "_variables": null,
+                        "_properties": null,
+                        "strictImports": false,
                         "allowRoot": true
                     }`,
                 },

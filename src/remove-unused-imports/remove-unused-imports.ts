@@ -12,7 +12,7 @@ export type UnusedImportsInputs = {
     importPaths: string[];
 };
 
-export async function removeUnusedImportsFromText(inputs: UnusedImportsInputs): Promise<string> {
+export async function removeUnusedImports(inputs: UnusedImportsInputs): Promise<string> {
     const fileContents = inputs.code ?? (await readFile(inputs.filePath)).toString();
 
     return fileContents;

@@ -1,9 +1,9 @@
 import {readFile} from 'fs/promises';
 import {join} from 'path';
 import {getDirectoryTests, getFixedFilePath} from '../test/directory-test-helpers';
-import {removeUnusedImportsFromText} from './remove-unused-imports';
+import {removeUnusedImports} from './remove-unused-imports';
 
-describe(removeUnusedImportsFromText.name, () => {
+describe(removeUnusedImports.name, () => {
     it('should pass all directory tests', async () => {
         const directoryTests = await getDirectoryTests();
 
@@ -15,7 +15,7 @@ describe(removeUnusedImportsFromText.name, () => {
                             directoryTest.directoryPath,
                             brokenFileRelativePath,
                         );
-                        const operatedOnContents = await removeUnusedImportsFromText({
+                        const operatedOnContents = await removeUnusedImports({
                             filePath: brokenFilePath,
                             importPaths: [],
                         });

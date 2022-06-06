@@ -26,7 +26,7 @@ function getExtendNames(node: tree.Extend): string[] {
 }
 
 function getAllImportableNodes(context: tree.Node): ImportableNode[] {
-    /** These are nodes that COULD be imported. */
+    /** These are nodes that COULD have been imported. */
     const importableNodes: ImportableNode[] = [];
 
     walkLess(context, (node) => {
@@ -58,6 +58,7 @@ function getAllImportableNodes(context: tree.Node): ImportableNode[] {
     return importableNodes;
 }
 
+/** Gets all var, mixin, etc. names that COULD have been imported from another file. */
 export function getImportableNodeNames(context: tree.Node): Set<string> {
     const importableNodes = getAllImportableNodes(context);
 

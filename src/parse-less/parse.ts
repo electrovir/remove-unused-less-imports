@@ -1,3 +1,4 @@
+import {extractErrorMessage} from 'augment-vir';
 import {readFileSync} from 'fs';
 import {ImportManager, Options, parse, tree} from 'less';
 
@@ -16,9 +17,15 @@ export type ParseResult = {
  */
 export async function parseLess(input: string, options?: Options): Promise<ParseResult> {
     return new Promise<ParseResult>((resolve, reject) => {
-        parse(input, options, (error, root, imports, options) => {
-            if (error) {
-                reject(error);
+        parse(input, options, (parseError, root, imports, options) => {
+            if (parseError) {
+                /**
+                 * Create a new error because the parse error doesn't have much information in it
+                 * (like no stack trace).
+                 */
+                const errorMessage = extractErrorMessage(parseError);
+                const errorToThrow = new Error(errorMessage);
+                reject(errorToThrow);
             }
 
             resolve({root, imports, options});
@@ -40,5 +47,12 @@ export async function parseLessFile(filePath: string, options: Options = {}) {
         options.filename = filePath;
     }
 
-    return await parseLess(contents, options);
+    try {
+        return await parseLess(contents, options);
+    } catch (parseError) {
+        const errorToThrow = new Error(
+            `Failed to parse less file "${filePath}": ${extractErrorMessage(parseError)}`,
+        );
+        throw errorToThrow;
+    }
 }

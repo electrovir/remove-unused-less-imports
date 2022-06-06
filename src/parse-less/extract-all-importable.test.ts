@@ -17,11 +17,12 @@ describe(getImportableNodeNames.name, () => {
         await testImportableNodeNames(
             parseTestFiles.allTheThings,
             [
-                '@var-definition',
+                '.mixin-another',
                 '.mixin-new-syntax',
                 '.mixin-old-syntax',
-                '.mixin-another',
                 '@map-definition',
+                '@myVar',
+                '@var-definition',
                 '#namespace-definition',
             ].sort(),
         );
