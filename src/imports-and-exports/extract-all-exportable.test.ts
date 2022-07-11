@@ -1,8 +1,8 @@
 import {tree} from 'less';
+import {parseLess, parseLessFile} from '../parse-less/parse';
 import {parseTestFiles} from '../test/test-file-paths';
 import {Assumption, testAssumptions} from './assumption-test-helpers';
 import {getExportableNodeNames} from './extract-all-exportable';
-import {parseLess, parseLessFile} from './parse';
 
 describe(getExportableNodeNames.name, () => {
     function expectNodeNames(context: tree.Node, expected: string[]) {

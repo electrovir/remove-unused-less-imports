@@ -304,12 +304,6 @@ declare namespace LessStatic {
         class Keyword extends Node {
             value: string;
         }
-        class Import extends Node {
-            options: Partial<{
-                reference: boolean;
-            }>;
-            path: Quoted;
-        }
         class JavaScript extends JsEvalNode {}
         class JsEvalNode extends Node {}
         class Media extends AtRule {}
@@ -339,6 +333,13 @@ declare namespace LessStatic {
             variable(name: string): Variable;
             properties(): {[name: string]: Variable};
             property(name: string): Variable;
+        }
+        class Import extends Node {
+            options: Partial<{
+                reference: boolean;
+            }>;
+            path: Quoted;
+            root: RuleSet;
         }
         class Selector extends Node {
             extendList: any | undefined;

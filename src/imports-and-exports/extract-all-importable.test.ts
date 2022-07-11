@@ -1,8 +1,8 @@
 import {tree} from 'less';
-import {parseTestFiles} from '../test/test-file-paths';
+import {parseLessFile} from '../parse-less/parse';
+import {parseTestFiles, parseTestingDir} from '../test/test-file-paths';
 import {Assumption, testAssumptions} from './assumption-test-helpers';
 import {getImportableNodeNames} from './extract-all-importable';
-import {parseLessFile} from './parse';
 
 describe(getImportableNodeNames.name, () => {
     async function testImportableNodeNames(
@@ -31,6 +31,130 @@ describe(getImportableNodeNames.name, () => {
     describe('assumptions', () => {
         it('should be correct assumptions', async () => {
             const assumptions: Assumption[] = [
+                {
+                    code: `
+                        @import (reference) 'simple-file';
+                        
+                        body {
+                            color: @myVar;
+                        }
+                    `,
+                    nodeConstructor: 'root',
+                    serialized: `{
+                        "type": "Ruleset",
+                        "selectors": null,
+                        "rules": {
+                            "0": {
+                                "type": "Import",
+                                "options": {"reference": true},
+                                "_index": 25,
+                                "path": {
+                                    "type": "Quoted",
+                                    "escaped": false,
+                                    "value": "simple-file",
+                                    "quote": "'",
+                                    "_index": 45,
+                                    "variableRegex": {},
+                                    "propRegex": {},
+                                    "allowRoot": false
+                                },
+                                "features": null,
+                                "allowRoot": true,
+                                "root": {
+                                    "type": "Ruleset",
+                                    "selectors": null,
+                                    "rules": {
+                                        "0": {
+                                            "type": "Declaration",
+                                            "name": "@myVar",
+                                            "value": {
+                                                "type": "Anonymous",
+                                                "value": "blue",
+                                                "_index": 8,
+                                                "rulesetLike": false,
+                                                "allowRoot": true
+                                            },
+                                            "important": "",
+                                            "merge": false,
+                                            "_index": 0,
+                                            "inline": false,
+                                            "variable": true,
+                                            "allowRoot": true
+                                        }
+                                    },
+                                    "_lookups": {},
+                                    "_variables": null,
+                                    "_properties": null,
+                                    "allowRoot": true,
+                                    "root": true,
+                                    "firstRoot": true,
+                                    "functionRegistry": {"_data": {}}
+                                },
+                                "importedFilename": "${parseTestFiles.simpleFile}"
+                            },
+                            "1": {
+                                "type": "Ruleset",
+                                "selectors": {
+                                    "0": {
+                                        "type": "Selector",
+                                        "evaldCondition": true,
+                                        "_index": 109,
+                                        "elements": {
+                                            "0": {
+                                                "type": "Element",
+                                                "combinator": {
+                                                    "type": "Combinator",
+                                                    "value": " ",
+                                                    "emptyOrWhitespace": true
+                                                },
+                                                "value": "body",
+                                                "isVariable": false,
+                                                "_index": 109
+                                            }
+                                        }
+                                    }
+                                },
+                                "rules": {
+                                    "0": {
+                                        "type": "Declaration",
+                                        "name": {"0": {"type": "Keyword", "value": "color"}},
+                                        "value": {
+                                            "type": "Value",
+                                            "value": {
+                                                "0": {
+                                                    "type": "Expression",
+                                                    "value": {
+                                                        "0": {"type": "Variable", "name": "@myVar", "_index": 151}
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "important": "",
+                                        "merge": false,
+                                        "_index": 144,
+                                        "inline": false,
+                                        "allowRoot": true
+                                    }
+                                },
+                                "_lookups": {},
+                                "_variables": null,
+                                "_properties": null,
+                                "strictImports": false,
+                                "allowRoot": true
+                            }
+                        },
+                        "_lookups": {},
+                        "_variables": null,
+                        "_properties": null,
+                        "allowRoot": true,
+                        "root": true,
+                        "firstRoot": true,
+                        "functionRegistry": {"_data": {}}
+                    }`,
+                    options: {
+                        paths: [parseTestingDir],
+                    },
+                },
                 {
                     code: `body {@var-definition: blue; color: @var-definition;}`,
                     nodeConstructor: tree.Ruleset,

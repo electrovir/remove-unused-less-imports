@@ -2,18 +2,18 @@ import {NodeType, tree} from 'less';
 import {
     allNodeTypes,
     getNodeType,
-    jsonSerializedNode,
+    jsonSerializeNode,
     mappedNodeConstructors,
     testAllNodeConstructors,
 } from '../augments/node';
-import {walkLess} from './walk-less';
+import {walkLess} from '../parse-less/walk-less';
 
 type ImportableNode = tree.VariableCall | tree.mixin.Call | tree.Extend | tree.Variable;
 
 function getMixinCallName(node: tree.mixin.Call): string {
     const name = node.selector?.elements[0]?.value;
     if (!name) {
-        console.error(jsonSerializedNode(node));
+        console.error(jsonSerializeNode(node));
         throw new Error(`Could not find node name in mixin call`);
     }
     return name;
@@ -74,7 +74,7 @@ export function getImportableNodeNames(context: tree.Node): Set<string> {
                 return node.name;
             }
 
-            console.error(jsonSerializedNode(node));
+            console.error(jsonSerializeNode(node));
             throw new Error(
                 `Failed to extract node name from "${(node as tree.Node).type}" type of node.`,
             );

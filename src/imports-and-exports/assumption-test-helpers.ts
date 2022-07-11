@@ -1,32 +1,38 @@
 import {awaitedForEach} from 'augment-vir';
-import {tree} from 'less';
-import {getNodeType, jsonSerializedNode} from '../augments/node';
+import {Options, tree} from 'less';
+import {getNodeType, jsonSerializeNode} from '../augments/node';
 import {collapseJsonWhiteSpace} from '../augments/string';
 import {Constructor} from '../augments/type';
-import {parseLess} from './parse';
-import {walkLess} from './walk-less';
+import {parseLess} from '../parse-less/parse';
+import {walkLess} from '../parse-less/walk-less';
 
 export type Assumption = {
     code: string;
-    nodeConstructor: Constructor<tree.Node> | undefined;
+    nodeConstructor: Constructor<tree.Node> | undefined | 'root';
     serialized: string;
-    log?: true;
+    options?: Options | undefined;
+    log?: true | undefined;
 };
 
-async function getFirstNodeOfType<T extends tree.Node | undefined>(
+async function getFirstNodeOfType(
     codeToParse: string,
-    nodeConstructor: T extends undefined ? undefined : Constructor<T>,
-): Promise<T> {
-    let nodeToReturn: T | undefined;
+    nodeConstructor: Assumption['nodeConstructor'],
+    options: Options,
+): Promise<tree.Node | undefined> {
+    let nodeToReturn: tree.Node | undefined;
+    const parsedRoot = (await parseLess(codeToParse, options)).root;
 
-    walkLess((await parseLess(codeToParse)).root, (node) => {
+    if (nodeConstructor === 'root') {
+        return parsedRoot;
+    }
+    walkLess(parsedRoot, (node) => {
         // bypass the root node
         if (node instanceof tree.Ruleset && node.root) {
             return false;
         }
         if (nodeConstructor) {
             if (node instanceof nodeConstructor!) {
-                nodeToReturn = node as T;
+                nodeToReturn = node;
                 return true;
             }
         } else {
@@ -45,25 +51,26 @@ async function getFirstNodeOfType<T extends tree.Node | undefined>(
             `Didn't expect to find any nodes but found "${nodeToReturn.type}" in "${codeToParse}"`,
         );
     }
-    return nodeToReturn as T;
+    return nodeToReturn;
 }
 
 export async function testAssumptions(assumptions: Assumption[]) {
     expect.assertions(assumptions.length);
 
     await awaitedForEach(assumptions, async (assumption) => {
-        const foundNode = await getFirstNodeOfType<any>(
+        const foundNode = await getFirstNodeOfType(
             assumption.code,
             assumption.nodeConstructor,
+            assumption.options ?? {},
         );
 
-        if (assumption.log) {
-            console.info({[foundNode.type]: foundNode});
+        if (assumption.log && foundNode) {
+            console.info({[getNodeType(foundNode)]: foundNode});
         }
 
         try {
-            if (assumption.nodeConstructor) {
-                expect(collapseJsonWhiteSpace(jsonSerializedNode(foundNode, 0))).toBe(
+            if (assumption.nodeConstructor && foundNode) {
+                expect(collapseJsonWhiteSpace(jsonSerializeNode(foundNode, 0))).toBe(
                     collapseJsonWhiteSpace(assumption.serialized),
                 );
             } else {

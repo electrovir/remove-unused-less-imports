@@ -1,8 +1,8 @@
 import {getObjectTypedKeys, isObject, mapObject, typedHasOwnProperty} from 'augment-vir';
 import {AnyNodeSubType, NodeType, tree} from 'less';
-import {Constructor} from './type';
+import {AsTuple, Constructor, ConstructorReturnType, wrapTypeWithReadonly} from './type';
 
-export const allNodeTypes: Readonly<NodeType[]> = [
+export const allNodeTypes = wrapTypeWithReadonly<Readonly<NodeType[]>>()([
     NodeType.Anonymous,
     NodeType.Assignment,
     NodeType.AtRule,
@@ -38,9 +38,9 @@ export const allNodeTypes: Readonly<NodeType[]> = [
     NodeType.Value,
     NodeType.Variable,
     NodeType.VariableCall,
-] as const;
+] as const);
 
-export const allNodeConstructors: Readonly<Constructor<tree.Node>[]> = [
+export const allNodeConstructors = wrapTypeWithReadonly<Readonly<Constructor<tree.Node>[]>>()([
     tree.Anonymous,
     tree.Assignment,
     tree.AtRule,
@@ -76,12 +76,29 @@ export const allNodeConstructors: Readonly<Constructor<tree.Node>[]> = [
     tree.Value,
     tree.Variable,
     tree.VariableCall,
-] as const;
+] as const);
 
-export const mappedNodeConstructors = allNodeTypes.reduce((accum, currentNodeType, index) => {
-    accum[currentNodeType] = allNodeConstructors[index]!;
-    return accum;
-}, {} as Record<NodeType, Constructor<tree.Node>>);
+type Constructors = {
+    [K in keyof AsTuple<typeof allNodeTypes>]: typeof allNodeConstructors[K];
+};
+type Types = {[K in keyof AsTuple<typeof allNodeTypes>]: typeof allNodeTypes[K]};
+type TypesMappedToConstructors = {
+    [K in keyof Types as Types[K]]: Constructors[K];
+};
+
+export const mappedNodeConstructors = (() => {
+    return allNodeTypes.reduce((accum, currentNodeType, index) => {
+        accum[currentNodeType] = allNodeConstructors[index]!;
+        return accum;
+    }, {} as Record<NodeType, Constructor<tree.Node>>) as TypesMappedToConstructors;
+})();
+
+export function isOfNodeType<SpecificNodeType extends NodeType>(
+    inputNode: unknown,
+    type: SpecificNodeType,
+): inputNode is ConstructorReturnType<TypesMappedToConstructors[SpecificNodeType]> {
+    return getNodeType(inputNode as any) === type;
+}
 
 export function testAllNodeConstructors(node: tree.Node): NodeType[] {
     const matchingConstructorEntries: [NodeType, Constructor<tree.Node>][] = (
@@ -127,7 +144,7 @@ function wrapInnerNodeToString<T extends tree.Node>(node: T, prop: keyof T): Nod
 
     if (!Array.isArray(subNodes) && !(subNodes instanceof tree.Node)) {
         logNodePropError(node, {prop});
-        throw new Error(`Property value on node at "${prop}" was not more nodes.`);
+        throw new Error(`Property value on node at "${String(prop)}" was not more nodes.`);
     }
     return [
         [
@@ -298,6 +315,11 @@ function nodeToSerializable(node: unknown): unknown {
     return node;
 }
 
-export function jsonSerializedNode(input: tree.Node, indent = 2): string {
+export function jsonSerializeNode(input: tree.Node, indent = 2): string {
     return JSON.stringify(nodeToSerializable(input), null, indent);
+}
+
+export function importNodeToLineString(importNode: tree.Import): string {
+    const reference = importNode.options.reference ? '(reference) ' : '';
+    return `@import `;
 }

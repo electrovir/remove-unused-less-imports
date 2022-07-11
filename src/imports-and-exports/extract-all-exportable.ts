@@ -3,11 +3,11 @@ import {NodeType, tree} from 'less';
 import {
     allNodeTypes,
     getNodeType,
-    jsonSerializedNode,
+    jsonSerializeNode,
     mappedNodeConstructors,
     testAllNodeConstructors,
 } from '../augments/node';
-import {walkLess} from './walk-less';
+import {walkLess} from '../parse-less/walk-less';
 
 type ExportableNode = tree.Declaration | tree.Ruleset | tree.mixin.Definition;
 
@@ -93,7 +93,7 @@ export function getExportableNodeNames(context: tree.Node): Set<string> {
                     return rulesetName;
                 }
             }
-            console.error(jsonSerializedNode(node));
+            console.error(jsonSerializeNode(node));
             throw new Error(`Failed to extract node name from "${node.type}" type of node.`);
         })
         .flat();
