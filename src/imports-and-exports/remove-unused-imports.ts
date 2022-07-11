@@ -51,9 +51,9 @@ export async function removeUnusedImports(inputs: UnusedImportsInputs): Promise<
 
     const fixedFileContents = unusedImports.reduce((newFileContents, unusedImport) => {
         const lineEndingIndex =
-            newFileContents.slice(0, unusedImport.index).indexOf('\n') + unusedImport.index + 2;
+            newFileContents.slice(unusedImport.index).indexOf('\n') + unusedImport.index + 1;
 
-        const fullLine = newFileContents.slice(unusedImport.index, lineEndingIndex + 1);
+        const fullLine = newFileContents.slice(unusedImport.index, lineEndingIndex);
         return newFileContents.replace(fullLine, '');
     }, originalFileContents);
 
