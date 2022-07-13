@@ -37,7 +37,7 @@ describe(removeUnusedImports.name, () => {
 });
 
 describe(getUnusedImports.name, () => {
-    it('should get all unused imports', async () => {
+    xit('should get all unused imports', async () => {
         const context = (await parseLessFile(parseTestFiles.unusedImports)).root;
         const unusedImports = getUnusedImports(context);
 
