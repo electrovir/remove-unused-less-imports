@@ -1,6 +1,7 @@
 {
     "compilerOptions": {
         "alwaysStrict": true,
+        "baseUrl": ".",
         "declaration": true,
         "esModuleInterop": true,
         "exactOptionalPropertyTypes": true,

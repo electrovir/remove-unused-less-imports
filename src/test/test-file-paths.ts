@@ -18,3 +18,9 @@ export const parseTestFiles = {
         'all-the-things-with-extra-importable-things.less',
     ),
 } as const;
+
+const cliTestDir = join(testFilesDir, 'cli-test');
+export const cliTestFiles = {
+    mainFile: join(cliTestDir, 'main-files', 'main-file.less'),
+    mainFileExpected: join(cliTestDir, 'main-files', 'expected-main-file.less'),
+};

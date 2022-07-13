@@ -1,4 +1,4 @@
-import {readFile} from 'fs/promises';
+import {readFile, writeFile} from 'fs/promises';
 import {tree} from 'less';
 import {parseLess} from '../parse-less/parse';
 import {getImportableNodeNames} from './extract-all-importable';
@@ -58,4 +58,12 @@ export async function removeUnusedImports(inputs: UnusedImportsInputs): Promise<
     }, originalFileContents);
 
     return fixedFileContents;
+}
+
+export async function removeAndWriteUnusedImports(
+    inputs: Omit<UnusedImportsInputs, 'code'>,
+): Promise<void> {
+    const output = await removeUnusedImports(inputs);
+
+    await writeFile(inputs.filePath, output);
 }
