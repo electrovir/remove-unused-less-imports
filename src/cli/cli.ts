@@ -2,7 +2,7 @@
 
 import {awaitedForEach} from 'augment-vir';
 import {existsSync} from 'fs';
-import {join} from 'path';
+import {basename, join} from 'path';
 import {removeAndWriteUnusedImports} from '../imports-and-exports/remove-unused-imports';
 import {getAllLessFiles} from './get-all-less-files';
 
@@ -34,12 +34,12 @@ async function main() {
     const allLessFiles = await getAllLessFiles(searchDir);
 
     await awaitedForEach(allLessFiles, async (lessFile) => {
+        console.info(`Processing ${basename(lessFile)}...`);
         await removeAndWriteUnusedImports({
             filePath: lessFile,
             importPaths: importDirs,
         });
     });
-    throw new Error('blah');
 }
 
 if (require.main === module) {
