@@ -27,7 +27,7 @@ export function getUnusedImports(context: tree.Ruleset): Set<tree.Import> {
             return possiblyImportedNames.has(importableName);
         });
 
-        if (!used) {
+        if (!used && availableImport.node.options.reference) {
             unusedImports.add(availableImport.node);
         }
     });
