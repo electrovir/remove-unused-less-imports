@@ -8,8 +8,15 @@ import {getAllLessFiles} from './get-all-less-files';
 
 async function main() {
     const indexOfThisScript = process.argv.findIndex((argv) => {
-        return argv.endsWith(join('cli', 'cli.js')) || argv.endsWith(join('cli', 'cli.ts'));
+        return (
+            argv.endsWith(join('cli', 'cli.js')) ||
+            argv.endsWith(join('cli', 'cli.ts')) ||
+            argv.endsWith('ruli')
+        );
     });
+    if (indexOfThisScript === -1) {
+        throw new Error('failed to find script in args list');
+    }
     const indexOfSearchDir = indexOfThisScript + 1;
     const searchDir = process.argv[indexOfSearchDir];
     if (!searchDir || !existsSync(searchDir)) {
