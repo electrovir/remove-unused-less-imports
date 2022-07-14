@@ -1,6 +1,6 @@
 {
     "name": "remove-unused-less-imports",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "description": "Removed unused LESS reference imports.",
     "keywords": [],
     "homepage": "https://github.com/electrovir/remove-unused-less-imports#readme",
@@ -16,9 +16,9 @@
         "name": "electrovir",
         "url": "https://github.com/electrovir"
     },
-    "main": "dist/cli.js",
+    "main": "dist/cli/cli.js",
     "bin": {
-        "ruli": "dist/cli.js"
+        "ruli": "dist/cli/cli.js"
     },
     "scripts": {
         "compile": "virmator compile && chmod +x dist/cli/cli.js",
