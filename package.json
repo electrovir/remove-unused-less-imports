@@ -1,6 +1,6 @@
 {
     "name": "remove-unused-less-imports",
-    "version": "0.0.4",
+    "version": "0.0.5",
     "description": "Removed unused LESS reference imports.",
     "keywords": [],
     "homepage": "https://github.com/electrovir/remove-unused-less-imports#readme",

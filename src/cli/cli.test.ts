@@ -12,6 +12,10 @@ describe('cli', () => {
         const command = './dist/cli/cli.js "test-files/cli-test" "test-files/cli-test/importable"';
 
         const result = await runShellCommand(interpolationSafeWindowsPath(command));
+        if (result.exitCode !== 0) {
+            console.error(result);
+        }
+        expect(result.exitCode).toBe(0);
 
         const afterMainFile = (await readFile(cliTestFiles.mainFile)).toString();
         const afterMainFileExpected = (await readFile(cliTestFiles.mainFileExpected)).toString();
